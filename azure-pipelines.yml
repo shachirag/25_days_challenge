@@ -1,0 +1,54 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+
+- task: Go@0
+  inputs:
+    command: 'get'
+    arguments: '-d'
+    workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+
+- task: Go@0
+  inputs:
+    command: 'build'
+    workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '$(System.DefaultWorkingDirectory)'
+    Contents: '**'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+ 
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
+
+ 
+
+- task: Docker@2
+  inputs:
+    repository: '$(AWS_ECR_IMAGE_URI)'
+    command: 'build'
+    Dockerfile: '$(System.DefaultWorkingDirectory)/Dockerfile'
+    buildContext: '$(System.DefaultWorkingDirectory)'
+
+
+- task: ECRPushImage@1
+
+  inputs:
+    awsCredentials: 'Self care aws access'
+    regionName: ap-south-1
+    imageSource: 'imagename'
+    sourceImageName: $(AWS_ECR_IMAGE_URI)
+    sourceImageTag: $(Build.BuildId)
+    pushTag: $(Build.BuildId)
+    repositoryName: $(AWS_ECR_REPOSITORY_NAME)
