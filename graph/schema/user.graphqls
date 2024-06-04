@@ -1,0 +1,51 @@
+type Query {
+  hello: String
+}
+
+type Mutation {
+  loginRequest(input: LoginRequestInput!): LoginPayload!
+  signUpRequest(input: SignUpRequestInput!): ResponseModel!
+  verifyOtpRequest(input: VerifyOtpRequestInput!): LoginPayload!
+}
+
+input LoginRequestInput {
+  email: String!
+  password: String!
+}
+
+input SignUpRequestInput {
+  username: String!
+  email: String!
+  password: String!
+}
+
+input VerifyOtpRequestInput {
+  otp: String!
+  username: String!
+  email: String!
+  password: String!
+}
+
+type LoginPayload {
+  status: Boolean!
+  message: String!
+  loginResponse: LoginResponse!
+}
+
+type LoginResponse {
+  id: ID!
+  username: String!
+  email: String!
+  Token: String!
+}
+
+type SignUpPayload {
+  status: Boolean!
+  message: String!
+  loginResponse: LoginResponse!
+}
+
+type ResponseModel {
+  status: Boolean!
+  message: String!
+}
