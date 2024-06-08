@@ -1,11 +1,12 @@
-type Query {
-  hello: String
-}
-
 type Mutation {
-  loginRequest(input: LoginRequestInput!): LoginPayload!
-  signUpRequest(input: SignUpRequestInput!): ResponseModel!
-  verifyOtpRequest(input: VerifyOtpRequestInput!): LoginPayload!
+  loginResponse(input: LoginRequestInput!): LoginPayload!
+  signUpResponse(input: SignUpRequestInput!): ResponseModel!
+  verifyOtpResponse(input: VerifyOtpRequestInput!): LoginPayload!
+  forgotPasswordResponse(input: ForgotPasswordRequestInput!): ResponseModel!
+  verifyOtpForResetPasswordResponse(
+    input: VerifyOtpForResetPasswordRequestInput!
+  ): ResponseModel!
+  resetPasswordResponse(input: ResetPasswordRequestInput!): ResponseModel!
 }
 
 input LoginRequestInput {
@@ -48,4 +49,19 @@ type SignUpPayload {
 type ResponseModel {
   status: Boolean!
   message: String!
+}
+
+input ForgotPasswordRequestInput {
+  email: String!
+}
+
+input VerifyOtpForResetPasswordRequestInput {
+  email: String!
+  otp: String!
+}
+
+input ResetPasswordRequestInput {
+  email: String!
+  newPassword: String!
+  confirmPassword: String!
 }

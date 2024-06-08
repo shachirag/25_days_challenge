@@ -7,23 +7,43 @@ package graph
 import (
 	"challenge/graph/model"
 	"challenge/handlers/auth"
+	"challenge/middleware"
 	"context"
 	"fmt"
 )
 
-// LoginRequest is the resolver for the loginRequest field.
-func (r *mutationResolver) LoginRequest(ctx context.Context, input model.LoginRequestInput) (*model.LoginPayload, error) {
+// LoginResponse is the resolver for the loginResponse field.
+func (r *mutationResolver) LoginResponse(ctx context.Context, input model.LoginRequestInput) (*model.LoginPayload, error) {
 	return auth.LoginCustomer(ctx, r.DB, input), nil
 }
 
-// SignUpRequest is the resolver for the signUpRequest field.
-func (r *mutationResolver) SignUpRequest(ctx context.Context, input model.SignUpRequestInput) (*model.ResponseModel, error) {
-	return auth.SignUpUser(ctx, r.DB, input, r.SESClient), nil
+// SignUpResponse is the resolver for the signUpResponse field.
+func (r *mutationResolver) SignUpResponse(ctx context.Context, input model.SignUpRequestInput) (*model.ResponseModel, error) {
+	return auth.SignUpUser(ctx, r.DB, r.SESClient, input), nil
 }
 
-// VerifyOtpRequest is the resolver for the verifyOtpRequest field.
-func (r *mutationResolver) VerifyOtpRequest(ctx context.Context, input model.VerifyOtpRequestInput) (*model.LoginPayload, error) {
+// VerifyOtpResponse is the resolver for the verifyOtpResponse field.
+func (r *mutationResolver) VerifyOtpResponse(ctx context.Context, input model.VerifyOtpRequestInput) (*model.LoginPayload, error) {
 	return auth.VerifyOtp(ctx, r.DB, input), nil
+}
+
+// ForgotPasswordResponse is the resolver for the forgotPasswordResponse field.
+func (r *mutationResolver) ForgotPasswordResponse(ctx context.Context, input model.ForgotPasswordRequestInput) (*model.ResponseModel, error) {
+	userID := middleware.ForContext(ctx)
+	if userID == "" {
+		return nil, fmt.Errorf("unauthorized")
+	}
+	return auth.ForgotPassword(ctx, r.DB, r.SESClient, input), nil
+}
+
+// VerifyOtpForResetPasswordResponse is the resolver for the verifyOtpForResetPasswordResponse field.
+func (r *mutationResolver) VerifyOtpForResetPasswordResponse(ctx context.Context, input model.VerifyOtpForResetPasswordRequestInput) (*model.ResponseModel, error) {
+	return auth.VerifyOtpForResetPassword(ctx, r.DB, input), nil
+}
+
+// ResetPasswordResponse is the resolver for the resetPasswordResponse field.
+func (r *mutationResolver) ResetPasswordResponse(ctx context.Context, input model.ResetPasswordRequestInput) (*model.ResponseModel, error) {
+	return auth.ResetPassword(ctx, r.DB, input), nil
 }
 
 // Hello is the resolver for the hello field.
@@ -39,3 +59,10 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.

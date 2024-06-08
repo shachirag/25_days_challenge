@@ -2,6 +2,10 @@
 
 package model
 
+type ForgotPasswordRequestInput struct {
+	Email string `json:"email"`
+}
+
 type LoginPayload struct {
 	Status        bool           `json:"status"`
 	Message       string         `json:"message"`
@@ -26,6 +30,12 @@ type Mutation struct {
 type Query struct {
 }
 
+type ResetPasswordRequestInput struct {
+	Email           string `json:"email"`
+	NewPassword     string `json:"newPassword"`
+	ConfirmPassword string `json:"confirmPassword"`
+}
+
 type ResponseModel struct {
 	Status  bool   `json:"status"`
 	Message string `json:"message"`
@@ -41,6 +51,11 @@ type SignUpRequestInput struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type VerifyOtpForResetPasswordRequestInput struct {
+	Email string `json:"email"`
+	Otp   string `json:"otp"`
 }
 
 type VerifyOtpRequestInput struct {

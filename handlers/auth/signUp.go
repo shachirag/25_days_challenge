@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func SignUpUser(ctx context.Context, db *database.DB, userInfo model.SignUpRequestInput, sesClient *ses.Client) *model.ResponseModel {
+func SignUpUser(ctx context.Context, db *database.DB,sesClient *ses.Client, userInfo model.SignUpRequestInput, ) *model.ResponseModel {
 	customerColl := db.GetCollection("user")
 	otpColl := db.GetCollection("otp")
 
