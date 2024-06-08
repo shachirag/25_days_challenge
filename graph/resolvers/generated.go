@@ -39,7 +39,6 @@ type Config struct {
 
 type ResolverRoot interface {
 	Mutation() MutationResolver
-	Query() QueryResolver
 }
 
 type DirectiveRoot struct {
@@ -53,10 +52,11 @@ type ComplexityRoot struct {
 	}
 
 	LoginResponse struct {
-		Email    func(childComplexity int) int
-		ID       func(childComplexity int) int
-		Token    func(childComplexity int) int
-		Username func(childComplexity int) int
+		Email         func(childComplexity int) int
+		ID            func(childComplexity int) int
+		SocialDetails func(childComplexity int) int
+		Token         func(childComplexity int) int
+		Username      func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -64,12 +64,12 @@ type ComplexityRoot struct {
 		LoginResponse                     func(childComplexity int, input model.LoginRequestInput) int
 		ResetPasswordResponse             func(childComplexity int, input model.ResetPasswordRequestInput) int
 		SignUpResponse                    func(childComplexity int, input model.SignUpRequestInput) int
+		SocialLoginResponse               func(childComplexity int, input model.SocialLoginRequestInput) int
 		VerifyOtpForResetPasswordResponse func(childComplexity int, input model.VerifyOtpForResetPasswordRequestInput) int
 		VerifyOtpResponse                 func(childComplexity int, input model.VerifyOtpRequestInput) int
 	}
 
 	Query struct {
-		Hello func(childComplexity int) int
 	}
 
 	ResponseModel struct {
@@ -82,18 +82,21 @@ type ComplexityRoot struct {
 		Message       func(childComplexity int) int
 		Status        func(childComplexity int) int
 	}
+
+	SocialDetails struct {
+		AppleID  func(childComplexity int) int
+		GoogleID func(childComplexity int) int
+	}
 }
 
 type MutationResolver interface {
 	LoginResponse(ctx context.Context, input model.LoginRequestInput) (*model.LoginPayload, error)
+	SocialLoginResponse(ctx context.Context, input model.SocialLoginRequestInput) (*model.LoginPayload, error)
 	SignUpResponse(ctx context.Context, input model.SignUpRequestInput) (*model.ResponseModel, error)
 	VerifyOtpResponse(ctx context.Context, input model.VerifyOtpRequestInput) (*model.LoginPayload, error)
 	ForgotPasswordResponse(ctx context.Context, input model.ForgotPasswordRequestInput) (*model.ResponseModel, error)
 	VerifyOtpForResetPasswordResponse(ctx context.Context, input model.VerifyOtpForResetPasswordRequestInput) (*model.ResponseModel, error)
 	ResetPasswordResponse(ctx context.Context, input model.ResetPasswordRequestInput) (*model.ResponseModel, error)
-}
-type QueryResolver interface {
-	Hello(ctx context.Context) (*string, error)
 }
 
 type executableSchema struct {
@@ -150,7 +153,14 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.LoginResponse.ID(childComplexity), true
 
-	case "LoginResponse.Token":
+	case "LoginResponse.socialDetails":
+		if e.complexity.LoginResponse.SocialDetails == nil {
+			break
+		}
+
+		return e.complexity.LoginResponse.SocialDetails(childComplexity), true
+
+	case "LoginResponse.token":
 		if e.complexity.LoginResponse.Token == nil {
 			break
 		}
@@ -212,6 +222,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.SignUpResponse(childComplexity, args["input"].(model.SignUpRequestInput)), true
 
+	case "Mutation.socialLoginResponse":
+		if e.complexity.Mutation.SocialLoginResponse == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_socialLoginResponse_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SocialLoginResponse(childComplexity, args["input"].(model.SocialLoginRequestInput)), true
+
 	case "Mutation.verifyOtpForResetPasswordResponse":
 		if e.complexity.Mutation.VerifyOtpForResetPasswordResponse == nil {
 			break
@@ -235,13 +257,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.VerifyOtpResponse(childComplexity, args["input"].(model.VerifyOtpRequestInput)), true
-
-	case "Query.hello":
-		if e.complexity.Query.Hello == nil {
-			break
-		}
-
-		return e.complexity.Query.Hello(childComplexity), true
 
 	case "ResponseModel.message":
 		if e.complexity.ResponseModel.Message == nil {
@@ -278,6 +293,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.SignUpPayload.Status(childComplexity), true
 
+	case "SocialDetails.appleId":
+		if e.complexity.SocialDetails.AppleID == nil {
+			break
+		}
+
+		return e.complexity.SocialDetails.AppleID(childComplexity), true
+
+	case "SocialDetails.googleId":
+		if e.complexity.SocialDetails.GoogleID == nil {
+			break
+		}
+
+		return e.complexity.SocialDetails.GoogleID(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -290,6 +319,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputLoginRequestInput,
 		ec.unmarshalInputResetPasswordRequestInput,
 		ec.unmarshalInputSignUpRequestInput,
+		ec.unmarshalInputSocialLoginRequestInput,
 		ec.unmarshalInputVerifyOtpForResetPasswordRequestInput,
 		ec.unmarshalInputVerifyOtpRequestInput,
 	)
@@ -389,12 +419,9 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "../schema/user.graphqls", Input: `type Query {
-  hello: String
-}
-
-type Mutation {
+	{Name: "../schema/user.graphqls", Input: `type Mutation {
   loginResponse(input: LoginRequestInput!): LoginPayload!
+  socialLoginResponse(input: SocialLoginRequestInput!): LoginPayload!
   signUpResponse(input: SignUpRequestInput!): ResponseModel!
   verifyOtpResponse(input: VerifyOtpRequestInput!): LoginPayload!
   forgotPasswordResponse(input: ForgotPasswordRequestInput!): ResponseModel!
@@ -420,6 +447,8 @@ input VerifyOtpRequestInput {
   username: String!
   email: String!
   password: String!
+  googleId: String!
+  appleId: String!
 }
 
 type LoginPayload {
@@ -432,7 +461,13 @@ type LoginResponse {
   id: ID!
   username: String!
   email: String!
-  Token: String!
+  token: String!
+  socialDetails: SocialDetails!
+}
+
+type SocialDetails {
+  appleId: String
+  googleId:String
 }
 
 type SignUpPayload {
@@ -459,6 +494,13 @@ input ResetPasswordRequestInput {
   email: String!
   newPassword: String!
   confirmPassword: String!
+}
+
+input SocialLoginRequestInput {
+  socialId: String!
+  type: String!
+  email: String
+  name: String!
 }
 `, BuiltIn: false},
 }
@@ -520,6 +562,21 @@ func (ec *executionContext) field_Mutation_signUpResponse_args(ctx context.Conte
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNSignUpRequestInput2challengeᚋgraphᚋmodelᚐSignUpRequestInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_socialLoginResponse_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.SocialLoginRequestInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNSocialLoginRequestInput2challengeᚋgraphᚋmodelᚐSocialLoginRequestInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -744,8 +801,10 @@ func (ec *executionContext) fieldContext_LoginPayload_loginResponse(_ context.Co
 				return ec.fieldContext_LoginResponse_username(ctx, field)
 			case "email":
 				return ec.fieldContext_LoginResponse_email(ctx, field)
-			case "Token":
-				return ec.fieldContext_LoginResponse_Token(ctx, field)
+			case "token":
+				return ec.fieldContext_LoginResponse_token(ctx, field)
+			case "socialDetails":
+				return ec.fieldContext_LoginResponse_socialDetails(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type LoginResponse", field.Name)
 		},
@@ -885,8 +944,8 @@ func (ec *executionContext) fieldContext_LoginResponse_email(_ context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _LoginResponse_Token(ctx context.Context, field graphql.CollectedField, obj *model.LoginResponse) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LoginResponse_Token(ctx, field)
+func (ec *executionContext) _LoginResponse_token(ctx context.Context, field graphql.CollectedField, obj *model.LoginResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LoginResponse_token(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -916,7 +975,7 @@ func (ec *executionContext) _LoginResponse_Token(ctx context.Context, field grap
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_LoginResponse_Token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_LoginResponse_token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "LoginResponse",
 		Field:      field,
@@ -924,6 +983,56 @@ func (ec *executionContext) fieldContext_LoginResponse_Token(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LoginResponse_socialDetails(ctx context.Context, field graphql.CollectedField, obj *model.LoginResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LoginResponse_socialDetails(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SocialDetails, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SocialDetails)
+	fc.Result = res
+	return ec.marshalNSocialDetails2ᚖchallengeᚋgraphᚋmodelᚐSocialDetails(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LoginResponse_socialDetails(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LoginResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "appleId":
+				return ec.fieldContext_SocialDetails_appleId(ctx, field)
+			case "googleId":
+				return ec.fieldContext_SocialDetails_googleId(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SocialDetails", field.Name)
 		},
 	}
 	return fc, nil
@@ -986,6 +1095,69 @@ func (ec *executionContext) fieldContext_Mutation_loginResponse(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_loginResponse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_socialLoginResponse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_socialLoginResponse(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SocialLoginResponse(rctx, fc.Args["input"].(model.SocialLoginRequestInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.LoginPayload)
+	fc.Result = res
+	return ec.marshalNLoginPayload2ᚖchallengeᚋgraphᚋmodelᚐLoginPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_socialLoginResponse(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "status":
+				return ec.fieldContext_LoginPayload_status(ctx, field)
+			case "message":
+				return ec.fieldContext_LoginPayload_message(ctx, field)
+			case "loginResponse":
+				return ec.fieldContext_LoginPayload_loginResponse(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LoginPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_socialLoginResponse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -1295,47 +1467,6 @@ func (ec *executionContext) fieldContext_Mutation_resetPasswordResponse(ctx cont
 	if fc.Args, err = ec.field_Mutation_resetPasswordResponse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_hello(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_hello(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Hello(rctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_hello(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
 	}
 	return fc, nil
 }
@@ -1690,10 +1821,94 @@ func (ec *executionContext) fieldContext_SignUpPayload_loginResponse(_ context.C
 				return ec.fieldContext_LoginResponse_username(ctx, field)
 			case "email":
 				return ec.fieldContext_LoginResponse_email(ctx, field)
-			case "Token":
-				return ec.fieldContext_LoginResponse_Token(ctx, field)
+			case "token":
+				return ec.fieldContext_LoginResponse_token(ctx, field)
+			case "socialDetails":
+				return ec.fieldContext_LoginResponse_socialDetails(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type LoginResponse", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialDetails_appleId(ctx context.Context, field graphql.CollectedField, obj *model.SocialDetails) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialDetails_appleId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AppleID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialDetails_appleId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialDetails",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SocialDetails_googleId(ctx context.Context, field graphql.CollectedField, obj *model.SocialDetails) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SocialDetails_googleId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GoogleID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SocialDetails_googleId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SocialDetails",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3615,6 +3830,54 @@ func (ec *executionContext) unmarshalInputSignUpRequestInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSocialLoginRequestInput(ctx context.Context, obj interface{}) (model.SocialLoginRequestInput, error) {
+	var it model.SocialLoginRequestInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"socialId", "type", "email", "name"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "socialId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("socialId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SocialID = data
+		case "type":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Type = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputVerifyOtpForResetPasswordRequestInput(ctx context.Context, obj interface{}) (model.VerifyOtpForResetPasswordRequestInput, error) {
 	var it model.VerifyOtpForResetPasswordRequestInput
 	asMap := map[string]interface{}{}
@@ -3656,7 +3919,7 @@ func (ec *executionContext) unmarshalInputVerifyOtpRequestInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"otp", "username", "email", "password"}
+	fieldsInOrder := [...]string{"otp", "username", "email", "password", "googleId", "appleId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3691,6 +3954,20 @@ func (ec *executionContext) unmarshalInputVerifyOtpRequestInput(ctx context.Cont
 				return it, err
 			}
 			it.Password = data
+		case "googleId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("googleId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GoogleID = data
+		case "appleId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("appleId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AppleID = data
 		}
 	}
 
@@ -3780,8 +4057,13 @@ func (ec *executionContext) _LoginResponse(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "Token":
-			out.Values[i] = ec._LoginResponse_Token(ctx, field, obj)
+		case "token":
+			out.Values[i] = ec._LoginResponse_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "socialDetails":
+			out.Values[i] = ec._LoginResponse_socialDetails(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -3830,6 +4112,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "loginResponse":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_loginResponse(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "socialLoginResponse":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_socialLoginResponse(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -3911,25 +4200,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "hello":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_hello(ctx, field)
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -4031,6 +4301,44 @@ func (ec *executionContext) _SignUpPayload(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var socialDetailsImplementors = []string{"SocialDetails"}
+
+func (ec *executionContext) _SocialDetails(ctx context.Context, sel ast.SelectionSet, obj *model.SocialDetails) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, socialDetailsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SocialDetails")
+		case "appleId":
+			out.Values[i] = ec._SocialDetails_appleId(ctx, field, obj)
+		case "googleId":
+			out.Values[i] = ec._SocialDetails_googleId(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4465,6 +4773,21 @@ func (ec *executionContext) marshalNResponseModel2ᚖchallengeᚋgraphᚋmodel�
 
 func (ec *executionContext) unmarshalNSignUpRequestInput2challengeᚋgraphᚋmodelᚐSignUpRequestInput(ctx context.Context, v interface{}) (model.SignUpRequestInput, error) {
 	res, err := ec.unmarshalInputSignUpRequestInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSocialDetails2ᚖchallengeᚋgraphᚋmodelᚐSocialDetails(ctx context.Context, sel ast.SelectionSet, v *model.SocialDetails) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SocialDetails(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSocialLoginRequestInput2challengeᚋgraphᚋmodelᚐSocialLoginRequestInput(ctx context.Context, v interface{}) (model.SocialLoginRequestInput, error) {
+	res, err := ec.unmarshalInputSocialLoginRequestInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

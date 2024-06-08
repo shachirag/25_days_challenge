@@ -17,6 +17,11 @@ func (r *mutationResolver) LoginResponse(ctx context.Context, input model.LoginR
 	return auth.LoginCustomer(ctx, r.DB, input), nil
 }
 
+// SocialLoginResponse is the resolver for the socialLoginResponse field.
+func (r *mutationResolver) SocialLoginResponse(ctx context.Context, input model.SocialLoginRequestInput) (*model.LoginPayload, error) {
+	return auth.SocialLoginCustomer(ctx, r.DB, input), nil
+}
+
 // SignUpResponse is the resolver for the signUpResponse field.
 func (r *mutationResolver) SignUpResponse(ctx context.Context, input model.SignUpRequestInput) (*model.ResponseModel, error) {
 	return auth.SignUpUser(ctx, r.DB, r.SESClient, input), nil
@@ -46,19 +51,10 @@ func (r *mutationResolver) ResetPasswordResponse(ctx context.Context, input mode
 	return auth.ResetPassword(ctx, r.DB, input), nil
 }
 
-// Hello is the resolver for the hello field.
-func (r *queryResolver) Hello(ctx context.Context) (*string, error) {
-	panic(fmt.Errorf("not implemented: Hello - hello"))
-}
-
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
-// Query returns QueryResolver implementation.
-func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
-
 type mutationResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }
 
 // !!! WARNING !!!
 // The code below was going to be deleted when updating resolvers. It has been copied here so you have
@@ -66,3 +62,8 @@ type queryResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *queryResolver) Hello(ctx context.Context) (*string, error) {
+	panic(fmt.Errorf("not implemented: Hello - hello"))
+}
+
+type queryResolver struct{ *Resolver }

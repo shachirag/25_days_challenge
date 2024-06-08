@@ -1,5 +1,6 @@
 type Mutation {
   loginResponse(input: LoginRequestInput!): LoginPayload!
+  socialLoginResponse(input: SocialLoginRequestInput!): LoginPayload!
   signUpResponse(input: SignUpRequestInput!): ResponseModel!
   verifyOtpResponse(input: VerifyOtpRequestInput!): LoginPayload!
   forgotPasswordResponse(input: ForgotPasswordRequestInput!): ResponseModel!
@@ -25,6 +26,8 @@ input VerifyOtpRequestInput {
   username: String!
   email: String!
   password: String!
+  googleId: String!
+  appleId: String!
 }
 
 type LoginPayload {
@@ -37,7 +40,13 @@ type LoginResponse {
   id: ID!
   username: String!
   email: String!
-  Token: String!
+  token: String!
+  socialDetails: SocialDetails!
+}
+
+type SocialDetails {
+  appleId: String
+  googleId:String
 }
 
 type SignUpPayload {
@@ -64,4 +73,11 @@ input ResetPasswordRequestInput {
   email: String!
   newPassword: String!
   confirmPassword: String!
+}
+
+input SocialLoginRequestInput {
+  socialId: String!
+  type: String!
+  email: String
+  name: String!
 }

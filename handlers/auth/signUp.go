@@ -37,14 +37,6 @@ func SignUpUser(ctx context.Context, db *database.DB,sesClient *ses.Client, user
 		}
 	}
 
-	// hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userInfo.Password), bcrypt.DefaultCost)
-	// if err != nil {
-	// 	return &model.ResponseModel{
-	// 		Status:  false,
-	// 		Message: "Error hash password",
-	// 	}
-	// }
-
 	id := primitive.NewObjectID()
 	otp := utils.Generate6DigitOtp()
 	otpData := entity.OtpEntity{

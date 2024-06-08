@@ -5,6 +5,7 @@ import (
 	"challenge/entity"
 	"challenge/graph/model"
 	"context"
+	"os"
 	"strings"
 	"time"
 
@@ -44,7 +45,7 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 		}
 	}
 
-	// _secret := os.Getenv("JWT_SECRET_KEY")
+	_secret := os.Getenv("JWT_SECRET_KEY")
 	month := (time.Hour * 24) * 30
 	claims := jtoken.MapClaims{
 		"Id":    customer.Id,
@@ -54,7 +55,7 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 	}
 
 	token := jtoken.NewWithClaims(jtoken.SigningMethodHS256, claims)
-	_token, err := token.SignedString([]byte("challenge"))
+	_token, err := token.SignedString([]byte(_secret))
 	if err != nil {
 		return &model.LoginPayload{
 			Status:  false,
@@ -70,6 +71,10 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 			Username: customer.UserName,
 			Email:    customer.Email,
 			Token:    _token,
+			SocialDetails: &model.SocialDetails{
+				AppleID:  &customer.SocialDetails.AppleId,
+				GoogleID: &customer.SocialDetails.GoogleId,
+			},
 		},
 	}
 }

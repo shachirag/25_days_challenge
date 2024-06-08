@@ -18,10 +18,11 @@ type LoginRequestInput struct {
 }
 
 type LoginResponse struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Token    string `json:"Token"`
+	ID            string         `json:"id"`
+	Username      string         `json:"username"`
+	Email         string         `json:"email"`
+	Token         string         `json:"token"`
+	SocialDetails *SocialDetails `json:"socialDetails"`
 }
 
 type Mutation struct {
@@ -53,6 +54,18 @@ type SignUpRequestInput struct {
 	Password string `json:"password"`
 }
 
+type SocialDetails struct {
+	AppleID  *string `json:"appleId,omitempty"`
+	GoogleID *string `json:"googleId,omitempty"`
+}
+
+type SocialLoginRequestInput struct {
+	SocialID string  `json:"socialId"`
+	Type     string  `json:"type"`
+	Email    *string `json:"email,omitempty"`
+	Name     string  `json:"name"`
+}
+
 type VerifyOtpForResetPasswordRequestInput struct {
 	Email string `json:"email"`
 	Otp   string `json:"otp"`
@@ -63,4 +76,6 @@ type VerifyOtpRequestInput struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	GoogleID string `json:"googleId"`
+	AppleID  string `json:"appleId"`
 }

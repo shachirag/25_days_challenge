@@ -74,10 +74,14 @@ func VerifyOtp(ctx context.Context, db *database.DB, otpInfo model.VerifyOtpRequ
 		UserName: otpInfo.Username,
 		Email:    otpInfo.Email,
 		Password: string(hashedPassword),
-		// UserName:  otpInfo.Username,
+		SocialDetails: entity.SocialDetails{
+			AppleId:  otpInfo.AppleID,
+			GoogleId: otpInfo.GoogleID,
+		},
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 	}
+
 
 	_, err = customerColl.InsertOne(ctx, userData)
 	if err != nil {
