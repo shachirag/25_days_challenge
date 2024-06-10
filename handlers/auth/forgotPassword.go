@@ -18,8 +18,8 @@ import (
 func ForgotPassword(ctx context.Context, db *database.DB, sesClient *ses.Client, input model.ForgotPasswordRequestInput) *model.ResponseModel {
 	var (
 		userColl = db.GetCollection("user")
-		otpColl   = db.GetCollection("otp")
-		user      entity.CustomerEntity
+		otpColl  = db.GetCollection("otp")
+		user     entity.CustomerEntity
 	)
 
 	smallEmail := strings.ToLower(input.Email)

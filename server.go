@@ -3,7 +3,6 @@ package main
 import (
 	"challenge/database"
 	graph "challenge/graph/resolvers"
-	"challenge/middleware"
 	"log"
 	"net/http"
 	"os"
@@ -36,8 +35,10 @@ func main() {
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 
+	http.Handle("/query", srv)
+	// http.Handle("/query", middleware.JWTMiddleware(srv))
+
 	http.Handle("/", playground.Handler("GraphQL Playground", "/query"))
-	http.Handle("/query", middleware.JWTMiddleware(srv))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL Playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

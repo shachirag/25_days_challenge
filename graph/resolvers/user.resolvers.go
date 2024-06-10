@@ -7,7 +7,6 @@ package graph
 import (
 	"challenge/graph/model"
 	"challenge/handlers/auth"
-	"challenge/middleware"
 	"context"
 	"fmt"
 )
@@ -34,10 +33,6 @@ func (r *mutationResolver) VerifyOtpResponse(ctx context.Context, input model.Ve
 
 // ForgotPasswordResponse is the resolver for the forgotPasswordResponse field.
 func (r *mutationResolver) ForgotPasswordResponse(ctx context.Context, input model.ForgotPasswordRequestInput) (*model.ResponseModel, error) {
-	userID := middleware.ForContext(ctx)
-	if userID == "" {
-		return nil, fmt.Errorf("unauthorized")
-	}
 	return auth.ForgotPassword(ctx, r.DB, r.SESClient, input), nil
 }
 
@@ -51,19 +46,16 @@ func (r *mutationResolver) ResetPasswordResponse(ctx context.Context, input mode
 	return auth.ResetPassword(ctx, r.DB, input), nil
 }
 
-// Mutation returns MutationResolver implementation.
-func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
-
-type mutationResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//     it when you're done.
-//   - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *queryResolver) Hello(ctx context.Context) (*string, error) {
+// Hello is the resolver for the hello field.
+func (r *queryResolver) Hello(ctx context.Context) (string, error) {
 	panic(fmt.Errorf("not implemented: Hello - hello"))
 }
 
+// Mutation returns MutationResolver implementation.
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
+// Query returns QueryResolver implementation.
+func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
+
+type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
