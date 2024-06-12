@@ -1,3 +1,5 @@
+scalar Int32
+
 type Query {
   hello: String!
 }
@@ -12,6 +14,7 @@ type Mutation {
     input: VerifyOtpForResetPasswordRequestInput!
   ): ResponseModel!
   resetPasswordResponse(input: ResetPasswordRequestInput!): ResponseModel!
+  status(input: ChangeStatusRequestInput!): ResponseModel!
 }
 
 input LoginRequestInput {
@@ -37,20 +40,29 @@ input VerifyOtpRequestInput {
 type LoginPayload {
   status: Boolean!
   message: String!
-  loginResponse: LoginResponse!
+  data: LoginResponse!
 }
 
 type LoginResponse {
-  id: ID!
-  username: String!
-  email: String!
-  token: String!
-  socialDetails: SocialDetails!
+  challengeStartDate: String!
+  challenges: [Challenge!]!
+  user: User!
 }
 
-type SocialDetails {
-  appleId: String
-  googleId:String
+type Challenge {
+  id: ID!
+  level: Int!
+  day: Int!
+  date: String!
+  completedTasks: [String!]!
+  status: String!
+}
+
+type User {
+  id: ID!
+  email: String!
+  userName: String!
+  token: String!
 }
 
 type SignUpPayload {
@@ -84,4 +96,9 @@ input SocialLoginRequestInput {
   type: String!
   email: String
   name: String!
+}
+
+input ChangeStatusRequestInput {
+  status: String!
+  challengeId: ID!
 }

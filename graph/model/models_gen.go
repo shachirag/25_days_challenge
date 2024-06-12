@@ -2,14 +2,28 @@
 
 package model
 
+type Challenge struct {
+	ID             string   `json:"id"`
+	Level          int      `json:"level"`
+	Day            int      `json:"day"`
+	Date           string   `json:"date"`
+	CompletedTasks []string `json:"completedTasks"`
+	Status         string   `json:"status"`
+}
+
+type ChangeStatusRequestInput struct {
+	Status      string `json:"status"`
+	ChallengeID string `json:"challengeId"`
+}
+
 type ForgotPasswordRequestInput struct {
 	Email string `json:"email"`
 }
 
 type LoginPayload struct {
-	Status        bool           `json:"status"`
-	Message       string         `json:"message"`
-	LoginResponse *LoginResponse `json:"loginResponse"`
+	Status  bool           `json:"status"`
+	Message string         `json:"message"`
+	Data    *LoginResponse `json:"data"`
 }
 
 type LoginRequestInput struct {
@@ -18,11 +32,9 @@ type LoginRequestInput struct {
 }
 
 type LoginResponse struct {
-	ID            string         `json:"id"`
-	Username      string         `json:"username"`
-	Email         string         `json:"email"`
-	Token         string         `json:"token"`
-	SocialDetails *SocialDetails `json:"socialDetails"`
+	ChallengeStartDate string       `json:"challengeStartDate"`
+	Challenges         []*Challenge `json:"challenges"`
+	User               *User        `json:"user"`
 }
 
 type Mutation struct {
@@ -54,16 +66,18 @@ type SignUpRequestInput struct {
 	Password string `json:"password"`
 }
 
-type SocialDetails struct {
-	AppleID  *string `json:"appleId,omitempty"`
-	GoogleID *string `json:"googleId,omitempty"`
-}
-
 type SocialLoginRequestInput struct {
 	SocialID string  `json:"socialId"`
 	Type     string  `json:"type"`
 	Email    *string `json:"email,omitempty"`
 	Name     string  `json:"name"`
+}
+
+type User struct {
+	ID       string `json:"id"`
+	Email    string `json:"email"`
+	UserName string `json:"userName"`
+	Token    string `json:"token"`
 }
 
 type VerifyOtpForResetPasswordRequestInput struct {

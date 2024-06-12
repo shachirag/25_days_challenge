@@ -46,6 +46,11 @@ func (r *mutationResolver) ResetPasswordResponse(ctx context.Context, input mode
 	return auth.ResetPassword(ctx, r.DB, input), nil
 }
 
+// Status is the resolver for the status field.
+func (r *mutationResolver) Status(ctx context.Context, input model.ChangeStatusRequestInput) (*model.ResponseModel, error) {
+	return auth.ChangeStatus(ctx, r.DB, input), nil
+}
+
 // Hello is the resolver for the hello field.
 func (r *queryResolver) Hello(ctx context.Context) (string, error) {
 	panic(fmt.Errorf("not implemented: Hello - hello"))

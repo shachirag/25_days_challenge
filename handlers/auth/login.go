@@ -45,6 +45,40 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 		}
 	}
 
+	var tasks []entity.TasksEntity
+	taskFilter := bson.M{"userId": customer.Id}
+	cursor, err := db.GetCollection("task").Find(ctx, taskFilter)
+	if err != nil {
+		return &model.LoginPayload{
+			Status:  false,
+			Message: "An error occurred while fetching tasks",
+		}
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var task entity.TasksEntity
+		if err := cursor.Decode(&task); err != nil {
+			return &model.LoginPayload{
+				Status:  false,
+				Message: "Error decoding task",
+			}
+		}
+		tasks = append(tasks, task)
+	}
+
+	challenges := []*model.Challenge{}
+	for _, task := range tasks {
+		challenge := &model.Challenge{
+			Level:          task.Level,
+			Day:            task.Day,
+			Date:           task.Date.Format(time.DateOnly),
+			CompletedTasks: task.CompletedTasks,
+			Status:         task.Status,
+		}
+		challenges = append(challenges, challenge)
+	}
+
 	_secret := os.Getenv("JWT_SECRET_KEY")
 	month := (time.Hour * 24) * 30
 	claims := jtoken.MapClaims{
@@ -66,15 +100,15 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 	return &model.LoginPayload{
 		Status:  true,
 		Message: "Login successful.",
-		LoginResponse: &model.LoginResponse{
-			ID:       customer.Id.Hex(),
-			Username: customer.UserName,
-			Email:    customer.Email,
-			Token:    _token,
-			SocialDetails: &model.SocialDetails{
-				AppleID:  &customer.SocialDetails.AppleId,
-				GoogleID: &customer.SocialDetails.GoogleId,
+		Data: &model.LoginResponse{
+			User: &model.User{
+				ID:       customer.Id.Hex(),
+				UserName: customer.UserName,
+				Email:    customer.Email,
+				Token:    _token,
 			},
+			ChallengeStartDate: tasks[0].ChalengeStartDate.Format(time.DateOnly),
+			Challenges:         challenges,
 		},
 	}
 }

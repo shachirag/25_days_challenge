@@ -82,7 +82,6 @@ func VerifyOtp(ctx context.Context, db *database.DB, otpInfo model.VerifyOtpRequ
 		UpdatedAt: time.Now().UTC(),
 	}
 
-
 	_, err = customerColl.InsertOne(ctx, userData)
 	if err != nil {
 		return &model.LoginPayload{
@@ -111,11 +110,13 @@ func VerifyOtp(ctx context.Context, db *database.DB, otpInfo model.VerifyOtpRequ
 	return &model.LoginPayload{
 		Status:  true,
 		Message: "Otp verified successful.",
-		LoginResponse: &model.LoginResponse{
-			ID:       userData.Id.Hex(),
-			Username: userData.UserName,
-			Email:    userData.Email,
-			Token:    _token,
+		Data: &model.LoginResponse{
+			User: &model.User{
+				ID:       id.Hex(),
+				UserName: otpInfo.Username,
+				Email:    otpInfo.Email,
+				Token:    _token,
+			},
 		},
 	}
 }

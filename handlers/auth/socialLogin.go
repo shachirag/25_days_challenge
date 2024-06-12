@@ -116,14 +116,12 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 	return &model.LoginPayload{
 		Status:  true,
 		Message: "Successfully logged in.",
-		LoginResponse: &model.LoginResponse{
-			ID:       customer.Id.Hex(),
-			Username: customer.UserName,
-			Email:    customer.Email,
-			Token:    token,
-			SocialDetails: &model.SocialDetails{
-				AppleID:  &customer.SocialDetails.AppleId,
-				GoogleID: &customer.SocialDetails.GoogleId,
+		Data: &model.LoginResponse{
+			User: &model.User{
+				ID:       customer.Id.Hex(),
+				UserName: customer.UserName,
+				Email:    customer.Email,
+				Token:    token,
 			},
 		},
 	}
