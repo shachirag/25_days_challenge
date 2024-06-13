@@ -17,72 +17,66 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.SocialLoginRequestInput) *model.LoginPayload {
+// SocialLoginCustomer handles social login or signup for a customer
+func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.SocialLoginRequestInput) (*model.LoginResponse, error) {
 	var (
 		userColl = db.GetCollection("user")
 		customer *entity.CustomerEntity
 	)
 
+	// Validate the social ID input
 	err := utils.ValidateSocialId(&input)
 	if err != nil {
-		return &model.LoginPayload{
-			Status:  false,
-			Message: err.Error(),
-		}
+		return nil, fiber.NewError(fiber.StatusBadRequest, "Invalid social ID: "+err.Error())
 	}
 
+	// Prepare the filter based on social login type
 	filter := bson.M{}
-	if input.Type == "apple" {
+	switch input.Type {
+	case "apple":
 		filter = bson.M{"appleId": input.SocialID}
-	} else if input.Type == "google" {
+	case "google":
 		filter = bson.M{"googleId": input.SocialID}
-	} else {
-		return &model.LoginPayload{
-			Status:  false,
-			Message: "Invalid social login type",
-		}
+	default:
+		return nil, fiber.NewError(fiber.StatusBadRequest, "Unsupported social login type")
 	}
 
+	// Lowercase email for uniformity
 	var smallEmail string
 	if input.Email != nil {
 		smallEmail = strings.ToLower(*input.Email)
 	}
 
+	// Attempt to find the user by social ID
 	err = userColl.FindOne(ctx, filter).Decode(&customer)
 	if err != nil {
 		if input.Email != nil {
+			// If not found by social ID, try finding by email
 			filter = bson.M{"email": smallEmail}
 			err = userColl.FindOne(ctx, filter).Decode(&customer)
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
+					// No document found, attempt to sign up
 					customer, err = socialSignup(ctx, db, &input)
 					if err != nil {
-						return &model.LoginPayload{
-							Status:  false,
-							Message: "Failed to perform social signup: " + err.Error(),
-						}
+						return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to sign up: "+err.Error())
 					}
 				} else {
-					return &model.LoginPayload{
-						Status:  false,
-						Message: "Internal server error while getting the user: " + err.Error(),
-					}
+					return nil, fiber.NewError(fiber.StatusInternalServerError, "Error finding user by email: "+err.Error())
 				}
 			}
-
 		} else {
-			return &model.LoginPayload{
-				Status:  false,
-				Message: "Customer not found",
-			}
+			// Email not provided, user not found
+			return nil, fiber.NewError(fiber.StatusNotFound, "User not found with provided social ID and no email to fallback")
 		}
 	}
 
+	// Update user details if necessary
 	if customer != nil {
 		update := bson.M{}
 		isUpdate := false
 		if customer.Email == "" && smallEmail != "" {
-			update["email"] = input.Email
+			update["email"] = smallEmail
 			isUpdate = true
 		}
 		if customer.SocialDetails.AppleId == "" && input.Type == "apple" {
@@ -97,36 +91,29 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 		if isUpdate {
 			_, err = userColl.UpdateOne(ctx, bson.M{"_id": customer.Id}, bson.M{"$set": update})
 			if err != nil {
-				return &model.LoginPayload{
-					Status:  false,
-					Message: "Error updating data: " + err.Error(),
-				}
+				return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to update user details: "+err.Error())
 			}
 		}
 	}
 
+	// Generate JWT token for the authenticated user
 	token, err := generateJWTToken(customer, smallEmail)
 	if err != nil {
-		return &model.LoginPayload{
-			Status:  false,
-			Message: "Failed to generate JWT token: " + err.Error(),
-		}
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to generate JWT token: "+err.Error())
 	}
 
-	return &model.LoginPayload{
-		Status:  true,
-		Message: "Successfully logged in.",
-		Data: &model.LoginResponse{
-			User: &model.User{
-				ID:       customer.Id.Hex(),
-				UserName: customer.UserName,
-				Email:    customer.Email,
-				Token:    token,
-			},
+	// Return the login payload with user information and token
+	return &model.LoginResponse{
+		User: &model.User{
+			ID:       customer.Id.Hex(),
+			UserName: customer.UserName,
+			Email:    customer.Email,
+			Token:    token,
 		},
-	}
+	}, nil
 }
 
+// Helper function to handle social signup
 func socialSignup(ctx context.Context, db *database.DB, data *model.SocialLoginRequestInput) (*entity.CustomerEntity, error) {
 	userColl := db.GetCollection("user")
 
@@ -135,21 +122,18 @@ func socialSignup(ctx context.Context, db *database.DB, data *model.SocialLoginR
 		smallEmail = strings.ToLower(*data.Email)
 	}
 
-	filter := bson.M{
-		"email": smallEmail,
-	}
-
+	// Check if a user with the same email already exists
+	filter := bson.M{"email": smallEmail}
 	exists, err := userColl.CountDocuments(ctx, filter)
 	if err != nil {
-		return nil, err
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error checking existing user: "+err.Error())
 	}
-
 	if exists > 0 {
-		return nil, fiber.ErrBadRequest
+		return nil, fiber.NewError(fiber.StatusBadRequest, "User with this email already exists")
 	}
 
+	// Create new user entity
 	id := primitive.NewObjectID()
-
 	customer := &entity.CustomerEntity{
 		Id:        id,
 		Email:     smallEmail,
@@ -158,33 +142,38 @@ func socialSignup(ctx context.Context, db *database.DB, data *model.SocialLoginR
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	if data.Type == "google" {
+	// Set the social details based on the login type
+	switch data.Type {
+	case "google":
 		customer.SocialDetails.GoogleId = data.SocialID
-	} else if data.Type == "apple" {
+	case "apple":
 		customer.SocialDetails.AppleId = data.SocialID
-	} else {
-		return nil, fiber.ErrBadRequest
+	default:
+		return nil, fiber.NewError(fiber.StatusBadRequest, "Unsupported social login type")
 	}
 
+	// Insert the new customer into the database
 	_, err = userColl.InsertOne(ctx, customer)
 	if err != nil {
-		return nil, err
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to insert new customer: "+err.Error())
 	}
 
 	return customer, nil
 }
 
+// Helper function to generate a JWT token
 func generateJWTToken(customer *entity.CustomerEntity, email string) (string, error) {
 	_secret := os.Getenv("JWT_SECRET_KEY")
 
 	month := (time.Hour * 24) * 30
 	claims := jwt.MapClaims{
-		"Id":    customer.Id,
+		"Id":    customer.Id.Hex(),
 		"email": email,
 		"role":  "customer",
 		"exp":   time.Now().Add(month * 6).Unix(),
 	}
 
+	// Create and sign the token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(_secret))
 }

@@ -11,44 +11,94 @@ import (
 	"fmt"
 )
 
-// LoginResponse is the resolver for the loginResponse field.
-func (r *mutationResolver) LoginResponse(ctx context.Context, input model.LoginRequestInput) (*model.LoginPayload, error) {
-	return auth.LoginCustomer(ctx, r.DB, input), nil
+// Login is the resolver for the login field.
+func (r *mutationResolver) Login(ctx context.Context, input model.LoginRequestInput) (*model.LoginResponse, error) {
+	loginPayload, err := auth.LoginCustomer(ctx, r.DB, input)
+	if err != nil {
+		return nil, err
+	}
+	return loginPayload, nil
 }
 
-// SocialLoginResponse is the resolver for the socialLoginResponse field.
-func (r *mutationResolver) SocialLoginResponse(ctx context.Context, input model.SocialLoginRequestInput) (*model.LoginPayload, error) {
-	return auth.SocialLoginCustomer(ctx, r.DB, input), nil
+// SocialLogin is the resolver for the socialLogin field.
+func (r *mutationResolver) SocialLogin(ctx context.Context, input model.SocialLoginRequestInput) (*model.LoginResponse, error) {
+	socialLoginPayload, err := auth.SocialLoginCustomer(ctx, r.DB, input)
+	if err != nil {
+		return nil, err
+	}
+	return socialLoginPayload, nil
 }
 
-// SignUpResponse is the resolver for the signUpResponse field.
-func (r *mutationResolver) SignUpResponse(ctx context.Context, input model.SignUpRequestInput) (*model.ResponseModel, error) {
-	return auth.SignUpUser(ctx, r.DB, r.SESClient, input), nil
+// Signup is the resolver for the signup field.
+func (r *mutationResolver) Signup(ctx context.Context, input model.SignUpRequestInput) (*model.User, error) {
+	signupPayload, err := auth.SignUpUser(ctx, r.DB, r.SESClient, input)
+	if err != nil {
+		return nil, err
+	}
+	return signupPayload, nil
 }
 
-// VerifyOtpResponse is the resolver for the verifyOtpResponse field.
-func (r *mutationResolver) VerifyOtpResponse(ctx context.Context, input model.VerifyOtpRequestInput) (*model.LoginPayload, error) {
-	return auth.VerifyOtp(ctx, r.DB, input), nil
+// VerifyOtp is the resolver for the verifyOtp field.
+func (r *mutationResolver) VerifyOtp(ctx context.Context, input model.VerifyOtpRequestInput) (*model.LoginResponse, error) {
+	signupPayload, err := auth.VerifyOtp(ctx, r.DB, input)
+	if err != nil {
+		return nil, err
+	}
+	return signupPayload, nil
 }
 
-// ForgotPasswordResponse is the resolver for the forgotPasswordResponse field.
-func (r *mutationResolver) ForgotPasswordResponse(ctx context.Context, input model.ForgotPasswordRequestInput) (*model.ResponseModel, error) {
-	return auth.ForgotPassword(ctx, r.DB, r.SESClient, input), nil
+// ForgotPassword is the resolver for the forgotPassword field.
+func (r *mutationResolver) ForgotPassword(ctx context.Context, input model.ForgotPasswordRequestInput) (*model.User, error) {
+	ForgotPasswordPayload, err := auth.ForgotPassword(ctx, r.DB, r.SESClient, input)
+	if err != nil {
+		return nil, err
+	}
+	return ForgotPasswordPayload, nil
 }
 
-// VerifyOtpForResetPasswordResponse is the resolver for the verifyOtpForResetPasswordResponse field.
-func (r *mutationResolver) VerifyOtpForResetPasswordResponse(ctx context.Context, input model.VerifyOtpForResetPasswordRequestInput) (*model.ResponseModel, error) {
-	return auth.VerifyOtpForResetPassword(ctx, r.DB, input), nil
+// VerifyOtpForResetPassword is the resolver for the verifyOtpForResetPassword field.
+func (r *mutationResolver) VerifyOtpForResetPassword(ctx context.Context, input model.VerifyOtpForResetPasswordRequestInput) (*model.User, error) {
+	VerifyOtpPayload, err := auth.VerifyOtpForResetPassword(ctx, r.DB, input)
+	if err != nil {
+		return nil, err
+	}
+	return VerifyOtpPayload, nil
 }
 
-// ResetPasswordResponse is the resolver for the resetPasswordResponse field.
-func (r *mutationResolver) ResetPasswordResponse(ctx context.Context, input model.ResetPasswordRequestInput) (*model.ResponseModel, error) {
-	return auth.ResetPassword(ctx, r.DB, input), nil
+// ResetPassword is the resolver for the resetPassword field.
+func (r *mutationResolver) ResetPassword(ctx context.Context, input model.ResetPasswordRequestInput) (*model.User, error) {
+	resetPasswordPayload, err := auth.ResetPassword(ctx, r.DB, input)
+	if err != nil {
+		return nil, err
+	}
+	return resetPasswordPayload, nil
 }
 
-// Status is the resolver for the status field.
-func (r *mutationResolver) Status(ctx context.Context, input model.ChangeStatusRequestInput) (*model.ResponseModel, error) {
-	return auth.ChangeStatus(ctx, r.DB, input), nil
+// ChangeStatus is the resolver for the changeStatus field.
+func (r *mutationResolver) ChangeStatus(ctx context.Context, input model.ChangeStatusRequestInput) (*model.Challenge, error) {
+	changeStatusPayload, err := auth.ChangeStatus(ctx, r.DB, input)
+	if err != nil {
+		return nil, err
+	}
+	return changeStatusPayload, nil
+}
+
+// SelfCareForm is the resolver for the selfCareForm field.
+func (r *mutationResolver) SelfCareForm(ctx context.Context, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error) {
+	selfCarePayload, err := auth.SelfCareForm(ctx, r.DB, input)
+	if err != nil {
+		return nil, err
+	}
+	return selfCarePayload, nil
+}
+
+// SelfCareFormData is the resolver for the selfCareFormData field.
+func (r *mutationResolver) SelfCareFormData(ctx context.Context, userID string, input model.GetSelfCareFormRequestInput) (*model.SelfCareReponse, error) {
+	selfCareFormDataPayload, err := auth.GetSelfCareFormData(ctx, r.DB, userID, input)
+	if err != nil {
+		return nil, err
+	}
+	return selfCareFormDataPayload, nil
 }
 
 // Hello is the resolver for the hello field.

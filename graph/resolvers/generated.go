@@ -53,12 +53,7 @@ type ComplexityRoot struct {
 		ID             func(childComplexity int) int
 		Level          func(childComplexity int) int
 		Status         func(childComplexity int) int
-	}
-
-	LoginPayload struct {
-		Data    func(childComplexity int) int
-		Message func(childComplexity int) int
-		Status  func(childComplexity int) int
+		UserID         func(childComplexity int) int
 	}
 
 	LoginResponse struct {
@@ -68,29 +63,28 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ForgotPasswordResponse            func(childComplexity int, input model.ForgotPasswordRequestInput) int
-		LoginResponse                     func(childComplexity int, input model.LoginRequestInput) int
-		ResetPasswordResponse             func(childComplexity int, input model.ResetPasswordRequestInput) int
-		SignUpResponse                    func(childComplexity int, input model.SignUpRequestInput) int
-		SocialLoginResponse               func(childComplexity int, input model.SocialLoginRequestInput) int
-		Status                            func(childComplexity int, input model.ChangeStatusRequestInput) int
-		VerifyOtpForResetPasswordResponse func(childComplexity int, input model.VerifyOtpForResetPasswordRequestInput) int
-		VerifyOtpResponse                 func(childComplexity int, input model.VerifyOtpRequestInput) int
+		ChangeStatus              func(childComplexity int, input model.ChangeStatusRequestInput) int
+		ForgotPassword            func(childComplexity int, input model.ForgotPasswordRequestInput) int
+		Login                     func(childComplexity int, input model.LoginRequestInput) int
+		ResetPassword             func(childComplexity int, input model.ResetPasswordRequestInput) int
+		SelfCareForm              func(childComplexity int, input model.SelfCareFormRequestInput) int
+		SelfCareFormData          func(childComplexity int, userID string, input model.GetSelfCareFormRequestInput) int
+		Signup                    func(childComplexity int, input model.SignUpRequestInput) int
+		SocialLogin               func(childComplexity int, input model.SocialLoginRequestInput) int
+		VerifyOtp                 func(childComplexity int, input model.VerifyOtpRequestInput) int
+		VerifyOtpForResetPassword func(childComplexity int, input model.VerifyOtpForResetPasswordRequestInput) int
 	}
 
 	Query struct {
 		Hello func(childComplexity int) int
 	}
 
-	ResponseModel struct {
-		Message func(childComplexity int) int
-		Status  func(childComplexity int) int
-	}
-
-	SignUpPayload struct {
-		LoginResponse func(childComplexity int) int
-		Message       func(childComplexity int) int
-		Status        func(childComplexity int) int
+	SelfCareReponse struct {
+		ID                                   func(childComplexity int) int
+		OwnStatement                         func(childComplexity int) int
+		ThingsThatYouLoveAboutYourself       func(childComplexity int) int
+		ThingsTodayThatBringYouJoyAndFlow    func(childComplexity int) int
+		ThingsYouWillDoTodayToNutureYourself func(childComplexity int) int
 	}
 
 	User struct {
@@ -102,14 +96,16 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	LoginResponse(ctx context.Context, input model.LoginRequestInput) (*model.LoginPayload, error)
-	SocialLoginResponse(ctx context.Context, input model.SocialLoginRequestInput) (*model.LoginPayload, error)
-	SignUpResponse(ctx context.Context, input model.SignUpRequestInput) (*model.ResponseModel, error)
-	VerifyOtpResponse(ctx context.Context, input model.VerifyOtpRequestInput) (*model.LoginPayload, error)
-	ForgotPasswordResponse(ctx context.Context, input model.ForgotPasswordRequestInput) (*model.ResponseModel, error)
-	VerifyOtpForResetPasswordResponse(ctx context.Context, input model.VerifyOtpForResetPasswordRequestInput) (*model.ResponseModel, error)
-	ResetPasswordResponse(ctx context.Context, input model.ResetPasswordRequestInput) (*model.ResponseModel, error)
-	Status(ctx context.Context, input model.ChangeStatusRequestInput) (*model.ResponseModel, error)
+	Login(ctx context.Context, input model.LoginRequestInput) (*model.LoginResponse, error)
+	SocialLogin(ctx context.Context, input model.SocialLoginRequestInput) (*model.LoginResponse, error)
+	Signup(ctx context.Context, input model.SignUpRequestInput) (*model.User, error)
+	VerifyOtp(ctx context.Context, input model.VerifyOtpRequestInput) (*model.LoginResponse, error)
+	ForgotPassword(ctx context.Context, input model.ForgotPasswordRequestInput) (*model.User, error)
+	VerifyOtpForResetPassword(ctx context.Context, input model.VerifyOtpForResetPasswordRequestInput) (*model.User, error)
+	ResetPassword(ctx context.Context, input model.ResetPasswordRequestInput) (*model.User, error)
+	ChangeStatus(ctx context.Context, input model.ChangeStatusRequestInput) (*model.Challenge, error)
+	SelfCareForm(ctx context.Context, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error)
+	SelfCareFormData(ctx context.Context, userID string, input model.GetSelfCareFormRequestInput) (*model.SelfCareReponse, error)
 }
 type QueryResolver interface {
 	Hello(ctx context.Context) (string, error)
@@ -176,26 +172,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Challenge.Status(childComplexity), true
 
-	case "LoginPayload.data":
-		if e.complexity.LoginPayload.Data == nil {
+	case "Challenge.userId":
+		if e.complexity.Challenge.UserID == nil {
 			break
 		}
 
-		return e.complexity.LoginPayload.Data(childComplexity), true
-
-	case "LoginPayload.message":
-		if e.complexity.LoginPayload.Message == nil {
-			break
-		}
-
-		return e.complexity.LoginPayload.Message(childComplexity), true
-
-	case "LoginPayload.status":
-		if e.complexity.LoginPayload.Status == nil {
-			break
-		}
-
-		return e.complexity.LoginPayload.Status(childComplexity), true
+		return e.complexity.Challenge.UserID(childComplexity), true
 
 	case "LoginResponse.challengeStartDate":
 		if e.complexity.LoginResponse.ChallengeStartDate == nil {
@@ -218,101 +200,125 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.LoginResponse.User(childComplexity), true
 
-	case "Mutation.forgotPasswordResponse":
-		if e.complexity.Mutation.ForgotPasswordResponse == nil {
+	case "Mutation.changeStatus":
+		if e.complexity.Mutation.ChangeStatus == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_forgotPasswordResponse_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_changeStatus_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ForgotPasswordResponse(childComplexity, args["input"].(model.ForgotPasswordRequestInput)), true
+		return e.complexity.Mutation.ChangeStatus(childComplexity, args["input"].(model.ChangeStatusRequestInput)), true
 
-	case "Mutation.loginResponse":
-		if e.complexity.Mutation.LoginResponse == nil {
+	case "Mutation.forgotPassword":
+		if e.complexity.Mutation.ForgotPassword == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_loginResponse_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_forgotPassword_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.LoginResponse(childComplexity, args["input"].(model.LoginRequestInput)), true
+		return e.complexity.Mutation.ForgotPassword(childComplexity, args["input"].(model.ForgotPasswordRequestInput)), true
 
-	case "Mutation.resetPasswordResponse":
-		if e.complexity.Mutation.ResetPasswordResponse == nil {
+	case "Mutation.login":
+		if e.complexity.Mutation.Login == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_resetPasswordResponse_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_login_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ResetPasswordResponse(childComplexity, args["input"].(model.ResetPasswordRequestInput)), true
+		return e.complexity.Mutation.Login(childComplexity, args["input"].(model.LoginRequestInput)), true
 
-	case "Mutation.signUpResponse":
-		if e.complexity.Mutation.SignUpResponse == nil {
+	case "Mutation.resetPassword":
+		if e.complexity.Mutation.ResetPassword == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_signUpResponse_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_resetPassword_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SignUpResponse(childComplexity, args["input"].(model.SignUpRequestInput)), true
+		return e.complexity.Mutation.ResetPassword(childComplexity, args["input"].(model.ResetPasswordRequestInput)), true
 
-	case "Mutation.socialLoginResponse":
-		if e.complexity.Mutation.SocialLoginResponse == nil {
+	case "Mutation.selfCareForm":
+		if e.complexity.Mutation.SelfCareForm == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_socialLoginResponse_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_selfCareForm_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SocialLoginResponse(childComplexity, args["input"].(model.SocialLoginRequestInput)), true
+		return e.complexity.Mutation.SelfCareForm(childComplexity, args["input"].(model.SelfCareFormRequestInput)), true
 
-	case "Mutation.status":
-		if e.complexity.Mutation.Status == nil {
+	case "Mutation.selfCareFormData":
+		if e.complexity.Mutation.SelfCareFormData == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_status_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_selfCareFormData_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.Status(childComplexity, args["input"].(model.ChangeStatusRequestInput)), true
+		return e.complexity.Mutation.SelfCareFormData(childComplexity, args["userId"].(string), args["input"].(model.GetSelfCareFormRequestInput)), true
 
-	case "Mutation.verifyOtpForResetPasswordResponse":
-		if e.complexity.Mutation.VerifyOtpForResetPasswordResponse == nil {
+	case "Mutation.signup":
+		if e.complexity.Mutation.Signup == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_verifyOtpForResetPasswordResponse_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_signup_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.VerifyOtpForResetPasswordResponse(childComplexity, args["input"].(model.VerifyOtpForResetPasswordRequestInput)), true
+		return e.complexity.Mutation.Signup(childComplexity, args["input"].(model.SignUpRequestInput)), true
 
-	case "Mutation.verifyOtpResponse":
-		if e.complexity.Mutation.VerifyOtpResponse == nil {
+	case "Mutation.socialLogin":
+		if e.complexity.Mutation.SocialLogin == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_verifyOtpResponse_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_socialLogin_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.VerifyOtpResponse(childComplexity, args["input"].(model.VerifyOtpRequestInput)), true
+		return e.complexity.Mutation.SocialLogin(childComplexity, args["input"].(model.SocialLoginRequestInput)), true
+
+	case "Mutation.verifyOtp":
+		if e.complexity.Mutation.VerifyOtp == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_verifyOtp_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.VerifyOtp(childComplexity, args["input"].(model.VerifyOtpRequestInput)), true
+
+	case "Mutation.verifyOtpForResetPassword":
+		if e.complexity.Mutation.VerifyOtpForResetPassword == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_verifyOtpForResetPassword_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.VerifyOtpForResetPassword(childComplexity, args["input"].(model.VerifyOtpForResetPasswordRequestInput)), true
 
 	case "Query.hello":
 		if e.complexity.Query.Hello == nil {
@@ -321,40 +327,40 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Hello(childComplexity), true
 
-	case "ResponseModel.message":
-		if e.complexity.ResponseModel.Message == nil {
+	case "SelfCareReponse.id":
+		if e.complexity.SelfCareReponse.ID == nil {
 			break
 		}
 
-		return e.complexity.ResponseModel.Message(childComplexity), true
+		return e.complexity.SelfCareReponse.ID(childComplexity), true
 
-	case "ResponseModel.status":
-		if e.complexity.ResponseModel.Status == nil {
+	case "SelfCareReponse.ownStatement":
+		if e.complexity.SelfCareReponse.OwnStatement == nil {
 			break
 		}
 
-		return e.complexity.ResponseModel.Status(childComplexity), true
+		return e.complexity.SelfCareReponse.OwnStatement(childComplexity), true
 
-	case "SignUpPayload.loginResponse":
-		if e.complexity.SignUpPayload.LoginResponse == nil {
+	case "SelfCareReponse.thingsThatYouLoveAboutYourself":
+		if e.complexity.SelfCareReponse.ThingsThatYouLoveAboutYourself == nil {
 			break
 		}
 
-		return e.complexity.SignUpPayload.LoginResponse(childComplexity), true
+		return e.complexity.SelfCareReponse.ThingsThatYouLoveAboutYourself(childComplexity), true
 
-	case "SignUpPayload.message":
-		if e.complexity.SignUpPayload.Message == nil {
+	case "SelfCareReponse.thingsTodayThatBringYouJoyAndFlow":
+		if e.complexity.SelfCareReponse.ThingsTodayThatBringYouJoyAndFlow == nil {
 			break
 		}
 
-		return e.complexity.SignUpPayload.Message(childComplexity), true
+		return e.complexity.SelfCareReponse.ThingsTodayThatBringYouJoyAndFlow(childComplexity), true
 
-	case "SignUpPayload.status":
-		if e.complexity.SignUpPayload.Status == nil {
+	case "SelfCareReponse.thingsYouWillDoTodayToNutureYourself":
+		if e.complexity.SelfCareReponse.ThingsYouWillDoTodayToNutureYourself == nil {
 			break
 		}
 
-		return e.complexity.SignUpPayload.Status(childComplexity), true
+		return e.complexity.SelfCareReponse.ThingsYouWillDoTodayToNutureYourself(childComplexity), true
 
 	case "User.email":
 		if e.complexity.User.Email == nil {
@@ -394,10 +400,14 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputChangeStatusRequestInput,
 		ec.unmarshalInputForgotPasswordRequestInput,
+		ec.unmarshalInputGetSelfCareFormRequestInput,
 		ec.unmarshalInputLoginRequestInput,
 		ec.unmarshalInputResetPasswordRequestInput,
+		ec.unmarshalInputSelfCareFormRequestInput,
 		ec.unmarshalInputSignUpRequestInput,
 		ec.unmarshalInputSocialLoginRequestInput,
+		ec.unmarshalInputTaskInput,
+		ec.unmarshalInputUserReq,
 		ec.unmarshalInputVerifyOtpForResetPasswordRequestInput,
 		ec.unmarshalInputVerifyOtpRequestInput,
 	)
@@ -497,37 +507,49 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "../schema/user.graphqls", Input: `scalar Int32
-
-type Query {
+	{Name: "../schema/user.graphqls", Input: `type Query {
   hello: String!
 }
 
 type Mutation {
-  loginResponse(input: LoginRequestInput!): LoginPayload!
-  socialLoginResponse(input: SocialLoginRequestInput!): LoginPayload!
-  signUpResponse(input: SignUpRequestInput!): ResponseModel!
-  verifyOtpResponse(input: VerifyOtpRequestInput!): LoginPayload!
-  forgotPasswordResponse(input: ForgotPasswordRequestInput!): ResponseModel!
-  verifyOtpForResetPasswordResponse(
+  login(input: LoginRequestInput!): LoginResponse!
+  socialLogin(input: SocialLoginRequestInput!): LoginResponse!
+  signup(input: SignUpRequestInput!): User!
+  verifyOtp(input: VerifyOtpRequestInput!): LoginResponse!
+  forgotPassword(input: ForgotPasswordRequestInput!): User!
+  verifyOtpForResetPassword(
     input: VerifyOtpForResetPasswordRequestInput!
-  ): ResponseModel!
-  resetPasswordResponse(input: ResetPasswordRequestInput!): ResponseModel!
-  status(input: ChangeStatusRequestInput!): ResponseModel!
+  ): User!
+  resetPassword(input: ResetPasswordRequestInput!): User!
+  changeStatus(input: ChangeStatusRequestInput!): Challenge!
+  selfCareForm(input: SelfCareFormRequestInput!): SelfCareReponse!
+  selfCareFormData(
+    userId: ID!
+    input: GetSelfCareFormRequestInput!
+  ): SelfCareReponse!
 }
 
-input LoginRequestInput {
-  email: String!
-  password: String!
-}
-
-input SignUpRequestInput {
-  username: String!
-  email: String!
-  password: String!
+type LoginResponse {
+  user: User!
+  challengeStartDate: String!
+  challenges: [Challenge!]!
 }
 
 input VerifyOtpRequestInput {
+  user: UserReq!
+  challengeStartDate: String!
+  task: TaskInput!
+}
+
+input TaskInput {
+  level: Int!
+  day: Int!
+  date: String!
+  completedTasks: [String!]!
+  status: String!
+}
+
+input UserReq {
   otp: String!
   username: String!
   email: String!
@@ -536,20 +558,9 @@ input VerifyOtpRequestInput {
   appleId: String!
 }
 
-type LoginPayload {
-  status: Boolean!
-  message: String!
-  data: LoginResponse!
-}
-
-type LoginResponse {
-  challengeStartDate: String!
-  challenges: [Challenge!]!
-  user: User!
-}
-
 type Challenge {
   id: ID!
+  userId: ID!
   level: Int!
   day: Int!
   date: String!
@@ -564,15 +575,13 @@ type User {
   token: String!
 }
 
-type SignUpPayload {
-  status: Boolean!
-  message: String!
-  loginResponse: LoginResponse!
+input LoginRequestInput {
+  email: String!
+  password: String!
 }
 
-type ResponseModel {
-  status: Boolean!
-  message: String!
+input SignUpRequestInput {
+  email: String!
 }
 
 input ForgotPasswordRequestInput {
@@ -601,6 +610,27 @@ input ChangeStatusRequestInput {
   status: String!
   challengeId: ID!
 }
+
+input SelfCareFormRequestInput {
+  challengeId: ID!
+  ownStatement: String!
+  thingsYouWillDoTodayToNutureYourself: String!
+  thingsThatYouLoveAboutYourself: String!
+  thingsTodayThatBringYouJoyAndFlow: String!
+}
+
+input GetSelfCareFormRequestInput {
+  day: Int!
+  level: Int!
+}
+
+type SelfCareReponse {
+  id: ID!
+  ownStatement: String!
+  thingsYouWillDoTodayToNutureYourself: String!
+  thingsThatYouLoveAboutYourself: String!
+  thingsTodayThatBringYouJoyAndFlow: String!
+}
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -609,82 +639,7 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_forgotPasswordResponse_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.ForgotPasswordRequestInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNForgotPasswordRequestInput2challengeᚋgraphᚋmodelᚐForgotPasswordRequestInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_loginResponse_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.LoginRequestInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNLoginRequestInput2challengeᚋgraphᚋmodelᚐLoginRequestInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_resetPasswordResponse_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.ResetPasswordRequestInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNResetPasswordRequestInput2challengeᚋgraphᚋmodelᚐResetPasswordRequestInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_signUpResponse_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.SignUpRequestInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNSignUpRequestInput2challengeᚋgraphᚋmodelᚐSignUpRequestInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_socialLoginResponse_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.SocialLoginRequestInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNSocialLoginRequestInput2challengeᚋgraphᚋmodelᚐSocialLoginRequestInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_status_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_changeStatus_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.ChangeStatusRequestInput
@@ -699,7 +654,121 @@ func (ec *executionContext) field_Mutation_status_args(ctx context.Context, rawA
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_verifyOtpForResetPasswordResponse_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_forgotPassword_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.ForgotPasswordRequestInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNForgotPasswordRequestInput2challengeᚋgraphᚋmodelᚐForgotPasswordRequestInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.LoginRequestInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNLoginRequestInput2challengeᚋgraphᚋmodelᚐLoginRequestInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_resetPassword_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.ResetPasswordRequestInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNResetPasswordRequestInput2challengeᚋgraphᚋmodelᚐResetPasswordRequestInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_selfCareFormData_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["userId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userId"] = arg0
+	var arg1 model.GetSelfCareFormRequestInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg1, err = ec.unmarshalNGetSelfCareFormRequestInput2challengeᚋgraphᚋmodelᚐGetSelfCareFormRequestInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_selfCareForm_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.SelfCareFormRequestInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNSelfCareFormRequestInput2challengeᚋgraphᚋmodelᚐSelfCareFormRequestInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_signup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.SignUpRequestInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNSignUpRequestInput2challengeᚋgraphᚋmodelᚐSignUpRequestInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_socialLogin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.SocialLoginRequestInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNSocialLoginRequestInput2challengeᚋgraphᚋmodelᚐSocialLoginRequestInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_verifyOtpForResetPassword_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.VerifyOtpForResetPasswordRequestInput
@@ -714,7 +783,7 @@ func (ec *executionContext) field_Mutation_verifyOtpForResetPasswordResponse_arg
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_verifyOtpResponse_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_verifyOtp_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.VerifyOtpRequestInput
@@ -814,6 +883,50 @@ func (ec *executionContext) _Challenge_id(ctx context.Context, field graphql.Col
 }
 
 func (ec *executionContext) fieldContext_Challenge_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Challenge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Challenge_userId(ctx context.Context, field graphql.CollectedField, obj *model.Challenge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Challenge_userId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Challenge_userId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Challenge",
 		Field:      field,
@@ -1046,8 +1159,8 @@ func (ec *executionContext) fieldContext_Challenge_status(_ context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _LoginPayload_status(ctx context.Context, field graphql.CollectedField, obj *model.LoginPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LoginPayload_status(ctx, field)
+func (ec *executionContext) _LoginResponse_user(ctx context.Context, field graphql.CollectedField, obj *model.LoginResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LoginResponse_user(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1060,7 +1173,7 @@ func (ec *executionContext) _LoginPayload_status(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Status, nil
+		return obj.User, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1072,115 +1185,29 @@ func (ec *executionContext) _LoginPayload_status(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖchallengeᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_LoginPayload_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_LoginResponse_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "LoginPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoginPayload_message(ctx context.Context, field graphql.CollectedField, obj *model.LoginPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LoginPayload_message(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LoginPayload_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoginPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoginPayload_data(ctx context.Context, field graphql.CollectedField, obj *model.LoginPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LoginPayload_data(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Data, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.LoginResponse)
-	fc.Result = res
-	return ec.marshalNLoginResponse2ᚖchallengeᚋgraphᚋmodelᚐLoginResponse(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LoginPayload_data(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoginPayload",
+		Object:     "LoginResponse",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "challengeStartDate":
-				return ec.fieldContext_LoginResponse_challengeStartDate(ctx, field)
-			case "challenges":
-				return ec.fieldContext_LoginResponse_challenges(ctx, field)
-			case "user":
-				return ec.fieldContext_LoginResponse_user(ctx, field)
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "userName":
+				return ec.fieldContext_User_userName(ctx, field)
+			case "token":
+				return ec.fieldContext_User_token(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type LoginResponse", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	return fc, nil
@@ -1271,6 +1298,8 @@ func (ec *executionContext) fieldContext_LoginResponse_challenges(_ context.Cont
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Challenge_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_Challenge_userId(ctx, field)
 			case "level":
 				return ec.fieldContext_Challenge_level(ctx, field)
 			case "day":
@@ -1288,8 +1317,8 @@ func (ec *executionContext) fieldContext_LoginResponse_challenges(_ context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _LoginResponse_user(ctx context.Context, field graphql.CollectedField, obj *model.LoginResponse) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LoginResponse_user(ctx, field)
+func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_login(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1302,7 +1331,133 @@ func (ec *executionContext) _LoginResponse_user(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
+		return ec.resolvers.Mutation().Login(rctx, fc.Args["input"].(model.LoginRequestInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.LoginResponse)
+	fc.Result = res
+	return ec.marshalNLoginResponse2ᚖchallengeᚋgraphᚋmodelᚐLoginResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_login(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "user":
+				return ec.fieldContext_LoginResponse_user(ctx, field)
+			case "challengeStartDate":
+				return ec.fieldContext_LoginResponse_challengeStartDate(ctx, field)
+			case "challenges":
+				return ec.fieldContext_LoginResponse_challenges(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LoginResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_login_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_socialLogin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_socialLogin(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SocialLogin(rctx, fc.Args["input"].(model.SocialLoginRequestInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.LoginResponse)
+	fc.Result = res
+	return ec.marshalNLoginResponse2ᚖchallengeᚋgraphᚋmodelᚐLoginResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_socialLogin(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "user":
+				return ec.fieldContext_LoginResponse_user(ctx, field)
+			case "challengeStartDate":
+				return ec.fieldContext_LoginResponse_challengeStartDate(ctx, field)
+			case "challenges":
+				return ec.fieldContext_LoginResponse_challenges(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LoginResponse", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_socialLogin_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_signup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_signup(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Signup(rctx, fc.Args["input"].(model.SignUpRequestInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1319,12 +1474,12 @@ func (ec *executionContext) _LoginResponse_user(ctx context.Context, field graph
 	return ec.marshalNUser2ᚖchallengeᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_LoginResponse_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_signup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "LoginResponse",
+		Object:     "Mutation",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -1339,58 +1494,6 @@ func (ec *executionContext) fieldContext_LoginResponse_user(_ context.Context, f
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_loginResponse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_loginResponse(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().LoginResponse(rctx, fc.Args["input"].(model.LoginRequestInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.LoginPayload)
-	fc.Result = res
-	return ec.marshalNLoginPayload2ᚖchallengeᚋgraphᚋmodelᚐLoginPayload(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_loginResponse(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "status":
-				return ec.fieldContext_LoginPayload_status(ctx, field)
-			case "message":
-				return ec.fieldContext_LoginPayload_message(ctx, field)
-			case "data":
-				return ec.fieldContext_LoginPayload_data(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type LoginPayload", field.Name)
-		},
-	}
 	defer func() {
 		if r := recover(); r != nil {
 			err = ec.Recover(ctx, r)
@@ -1398,15 +1501,15 @@ func (ec *executionContext) fieldContext_Mutation_loginResponse(ctx context.Cont
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_loginResponse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_signup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_socialLoginResponse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_socialLoginResponse(ctx, field)
+func (ec *executionContext) _Mutation_verifyOtp(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_verifyOtp(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1419,7 +1522,7 @@ func (ec *executionContext) _Mutation_socialLoginResponse(ctx context.Context, f
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().SocialLoginResponse(rctx, fc.Args["input"].(model.SocialLoginRequestInput))
+		return ec.resolvers.Mutation().VerifyOtp(rctx, fc.Args["input"].(model.VerifyOtpRequestInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1431,12 +1534,12 @@ func (ec *executionContext) _Mutation_socialLoginResponse(ctx context.Context, f
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.LoginPayload)
+	res := resTmp.(*model.LoginResponse)
 	fc.Result = res
-	return ec.marshalNLoginPayload2ᚖchallengeᚋgraphᚋmodelᚐLoginPayload(ctx, field.Selections, res)
+	return ec.marshalNLoginResponse2ᚖchallengeᚋgraphᚋmodelᚐLoginResponse(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_socialLoginResponse(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_verifyOtp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -1444,14 +1547,14 @@ func (ec *executionContext) fieldContext_Mutation_socialLoginResponse(ctx contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "status":
-				return ec.fieldContext_LoginPayload_status(ctx, field)
-			case "message":
-				return ec.fieldContext_LoginPayload_message(ctx, field)
-			case "data":
-				return ec.fieldContext_LoginPayload_data(ctx, field)
+			case "user":
+				return ec.fieldContext_LoginResponse_user(ctx, field)
+			case "challengeStartDate":
+				return ec.fieldContext_LoginResponse_challengeStartDate(ctx, field)
+			case "challenges":
+				return ec.fieldContext_LoginResponse_challenges(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type LoginPayload", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type LoginResponse", field.Name)
 		},
 	}
 	defer func() {
@@ -1461,15 +1564,15 @@ func (ec *executionContext) fieldContext_Mutation_socialLoginResponse(ctx contex
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_socialLoginResponse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_verifyOtp_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_signUpResponse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_signUpResponse(ctx, field)
+func (ec *executionContext) _Mutation_forgotPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_forgotPassword(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1482,7 +1585,7 @@ func (ec *executionContext) _Mutation_signUpResponse(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().SignUpResponse(rctx, fc.Args["input"].(model.SignUpRequestInput))
+		return ec.resolvers.Mutation().ForgotPassword(rctx, fc.Args["input"].(model.ForgotPasswordRequestInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1494,12 +1597,12 @@ func (ec *executionContext) _Mutation_signUpResponse(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.ResponseModel)
+	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNResponseModel2ᚖchallengeᚋgraphᚋmodelᚐResponseModel(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖchallengeᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_signUpResponse(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_forgotPassword(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -1507,12 +1610,16 @@ func (ec *executionContext) fieldContext_Mutation_signUpResponse(ctx context.Con
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "status":
-				return ec.fieldContext_ResponseModel_status(ctx, field)
-			case "message":
-				return ec.fieldContext_ResponseModel_message(ctx, field)
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "userName":
+				return ec.fieldContext_User_userName(ctx, field)
+			case "token":
+				return ec.fieldContext_User_token(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type ResponseModel", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	defer func() {
@@ -1522,15 +1629,15 @@ func (ec *executionContext) fieldContext_Mutation_signUpResponse(ctx context.Con
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_signUpResponse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_forgotPassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_verifyOtpResponse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_verifyOtpResponse(ctx, field)
+func (ec *executionContext) _Mutation_verifyOtpForResetPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_verifyOtpForResetPassword(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1543,7 +1650,7 @@ func (ec *executionContext) _Mutation_verifyOtpResponse(ctx context.Context, fie
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().VerifyOtpResponse(rctx, fc.Args["input"].(model.VerifyOtpRequestInput))
+		return ec.resolvers.Mutation().VerifyOtpForResetPassword(rctx, fc.Args["input"].(model.VerifyOtpForResetPasswordRequestInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1555,12 +1662,12 @@ func (ec *executionContext) _Mutation_verifyOtpResponse(ctx context.Context, fie
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.LoginPayload)
+	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNLoginPayload2ᚖchallengeᚋgraphᚋmodelᚐLoginPayload(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖchallengeᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_verifyOtpResponse(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_verifyOtpForResetPassword(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -1568,14 +1675,16 @@ func (ec *executionContext) fieldContext_Mutation_verifyOtpResponse(ctx context.
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "status":
-				return ec.fieldContext_LoginPayload_status(ctx, field)
-			case "message":
-				return ec.fieldContext_LoginPayload_message(ctx, field)
-			case "data":
-				return ec.fieldContext_LoginPayload_data(ctx, field)
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "userName":
+				return ec.fieldContext_User_userName(ctx, field)
+			case "token":
+				return ec.fieldContext_User_token(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type LoginPayload", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	defer func() {
@@ -1585,15 +1694,15 @@ func (ec *executionContext) fieldContext_Mutation_verifyOtpResponse(ctx context.
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_verifyOtpResponse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_verifyOtpForResetPassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_forgotPasswordResponse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_forgotPasswordResponse(ctx, field)
+func (ec *executionContext) _Mutation_resetPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_resetPassword(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1606,7 +1715,7 @@ func (ec *executionContext) _Mutation_forgotPasswordResponse(ctx context.Context
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ForgotPasswordResponse(rctx, fc.Args["input"].(model.ForgotPasswordRequestInput))
+		return ec.resolvers.Mutation().ResetPassword(rctx, fc.Args["input"].(model.ResetPasswordRequestInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1618,12 +1727,12 @@ func (ec *executionContext) _Mutation_forgotPasswordResponse(ctx context.Context
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.ResponseModel)
+	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNResponseModel2ᚖchallengeᚋgraphᚋmodelᚐResponseModel(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖchallengeᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_forgotPasswordResponse(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_resetPassword(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -1631,12 +1740,16 @@ func (ec *executionContext) fieldContext_Mutation_forgotPasswordResponse(ctx con
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "status":
-				return ec.fieldContext_ResponseModel_status(ctx, field)
-			case "message":
-				return ec.fieldContext_ResponseModel_message(ctx, field)
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "userName":
+				return ec.fieldContext_User_userName(ctx, field)
+			case "token":
+				return ec.fieldContext_User_token(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type ResponseModel", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	defer func() {
@@ -1646,15 +1759,15 @@ func (ec *executionContext) fieldContext_Mutation_forgotPasswordResponse(ctx con
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_forgotPasswordResponse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_resetPassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_verifyOtpForResetPasswordResponse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_verifyOtpForResetPasswordResponse(ctx, field)
+func (ec *executionContext) _Mutation_changeStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_changeStatus(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1667,7 +1780,7 @@ func (ec *executionContext) _Mutation_verifyOtpForResetPasswordResponse(ctx cont
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().VerifyOtpForResetPasswordResponse(rctx, fc.Args["input"].(model.VerifyOtpForResetPasswordRequestInput))
+		return ec.resolvers.Mutation().ChangeStatus(rctx, fc.Args["input"].(model.ChangeStatusRequestInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1679,12 +1792,12 @@ func (ec *executionContext) _Mutation_verifyOtpForResetPasswordResponse(ctx cont
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.ResponseModel)
+	res := resTmp.(*model.Challenge)
 	fc.Result = res
-	return ec.marshalNResponseModel2ᚖchallengeᚋgraphᚋmodelᚐResponseModel(ctx, field.Selections, res)
+	return ec.marshalNChallenge2ᚖchallengeᚋgraphᚋmodelᚐChallenge(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_verifyOtpForResetPasswordResponse(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_changeStatus(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -1692,12 +1805,22 @@ func (ec *executionContext) fieldContext_Mutation_verifyOtpForResetPasswordRespo
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_Challenge_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_Challenge_userId(ctx, field)
+			case "level":
+				return ec.fieldContext_Challenge_level(ctx, field)
+			case "day":
+				return ec.fieldContext_Challenge_day(ctx, field)
+			case "date":
+				return ec.fieldContext_Challenge_date(ctx, field)
+			case "completedTasks":
+				return ec.fieldContext_Challenge_completedTasks(ctx, field)
 			case "status":
-				return ec.fieldContext_ResponseModel_status(ctx, field)
-			case "message":
-				return ec.fieldContext_ResponseModel_message(ctx, field)
+				return ec.fieldContext_Challenge_status(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type ResponseModel", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Challenge", field.Name)
 		},
 	}
 	defer func() {
@@ -1707,15 +1830,15 @@ func (ec *executionContext) fieldContext_Mutation_verifyOtpForResetPasswordRespo
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_verifyOtpForResetPasswordResponse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_changeStatus_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_resetPasswordResponse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_resetPasswordResponse(ctx, field)
+func (ec *executionContext) _Mutation_selfCareForm(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_selfCareForm(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1728,7 +1851,7 @@ func (ec *executionContext) _Mutation_resetPasswordResponse(ctx context.Context,
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ResetPasswordResponse(rctx, fc.Args["input"].(model.ResetPasswordRequestInput))
+		return ec.resolvers.Mutation().SelfCareForm(rctx, fc.Args["input"].(model.SelfCareFormRequestInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1740,12 +1863,12 @@ func (ec *executionContext) _Mutation_resetPasswordResponse(ctx context.Context,
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.ResponseModel)
+	res := resTmp.(*model.SelfCareReponse)
 	fc.Result = res
-	return ec.marshalNResponseModel2ᚖchallengeᚋgraphᚋmodelᚐResponseModel(ctx, field.Selections, res)
+	return ec.marshalNSelfCareReponse2ᚖchallengeᚋgraphᚋmodelᚐSelfCareReponse(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_resetPasswordResponse(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_selfCareForm(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -1753,12 +1876,18 @@ func (ec *executionContext) fieldContext_Mutation_resetPasswordResponse(ctx cont
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "status":
-				return ec.fieldContext_ResponseModel_status(ctx, field)
-			case "message":
-				return ec.fieldContext_ResponseModel_message(ctx, field)
+			case "id":
+				return ec.fieldContext_SelfCareReponse_id(ctx, field)
+			case "ownStatement":
+				return ec.fieldContext_SelfCareReponse_ownStatement(ctx, field)
+			case "thingsYouWillDoTodayToNutureYourself":
+				return ec.fieldContext_SelfCareReponse_thingsYouWillDoTodayToNutureYourself(ctx, field)
+			case "thingsThatYouLoveAboutYourself":
+				return ec.fieldContext_SelfCareReponse_thingsThatYouLoveAboutYourself(ctx, field)
+			case "thingsTodayThatBringYouJoyAndFlow":
+				return ec.fieldContext_SelfCareReponse_thingsTodayThatBringYouJoyAndFlow(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type ResponseModel", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type SelfCareReponse", field.Name)
 		},
 	}
 	defer func() {
@@ -1768,15 +1897,15 @@ func (ec *executionContext) fieldContext_Mutation_resetPasswordResponse(ctx cont
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_resetPasswordResponse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_selfCareForm_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_status(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_status(ctx, field)
+func (ec *executionContext) _Mutation_selfCareFormData(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_selfCareFormData(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1789,7 +1918,7 @@ func (ec *executionContext) _Mutation_status(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Status(rctx, fc.Args["input"].(model.ChangeStatusRequestInput))
+		return ec.resolvers.Mutation().SelfCareFormData(rctx, fc.Args["userId"].(string), fc.Args["input"].(model.GetSelfCareFormRequestInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1801,12 +1930,12 @@ func (ec *executionContext) _Mutation_status(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.ResponseModel)
+	res := resTmp.(*model.SelfCareReponse)
 	fc.Result = res
-	return ec.marshalNResponseModel2ᚖchallengeᚋgraphᚋmodelᚐResponseModel(ctx, field.Selections, res)
+	return ec.marshalNSelfCareReponse2ᚖchallengeᚋgraphᚋmodelᚐSelfCareReponse(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_selfCareFormData(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -1814,12 +1943,18 @@ func (ec *executionContext) fieldContext_Mutation_status(ctx context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "status":
-				return ec.fieldContext_ResponseModel_status(ctx, field)
-			case "message":
-				return ec.fieldContext_ResponseModel_message(ctx, field)
+			case "id":
+				return ec.fieldContext_SelfCareReponse_id(ctx, field)
+			case "ownStatement":
+				return ec.fieldContext_SelfCareReponse_ownStatement(ctx, field)
+			case "thingsYouWillDoTodayToNutureYourself":
+				return ec.fieldContext_SelfCareReponse_thingsYouWillDoTodayToNutureYourself(ctx, field)
+			case "thingsThatYouLoveAboutYourself":
+				return ec.fieldContext_SelfCareReponse_thingsThatYouLoveAboutYourself(ctx, field)
+			case "thingsTodayThatBringYouJoyAndFlow":
+				return ec.fieldContext_SelfCareReponse_thingsTodayThatBringYouJoyAndFlow(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type ResponseModel", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type SelfCareReponse", field.Name)
 		},
 	}
 	defer func() {
@@ -1829,7 +1964,7 @@ func (ec *executionContext) fieldContext_Mutation_status(ctx context.Context, fi
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_status_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_selfCareFormData_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -2009,8 +2144,8 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _ResponseModel_status(ctx context.Context, field graphql.CollectedField, obj *model.ResponseModel) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ResponseModel_status(ctx, field)
+func (ec *executionContext) _SelfCareReponse_id(ctx context.Context, field graphql.CollectedField, obj *model.SelfCareReponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SelfCareReponse_id(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2023,7 +2158,7 @@ func (ec *executionContext) _ResponseModel_status(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Status, nil
+		return obj.ID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2035,26 +2170,26 @@ func (ec *executionContext) _ResponseModel_status(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_ResponseModel_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SelfCareReponse_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ResponseModel",
+		Object:     "SelfCareReponse",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _ResponseModel_message(ctx context.Context, field graphql.CollectedField, obj *model.ResponseModel) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ResponseModel_message(ctx, field)
+func (ec *executionContext) _SelfCareReponse_ownStatement(ctx context.Context, field graphql.CollectedField, obj *model.SelfCareReponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SelfCareReponse_ownStatement(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2067,7 +2202,7 @@ func (ec *executionContext) _ResponseModel_message(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
+		return obj.OwnStatement, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2084,9 +2219,9 @@ func (ec *executionContext) _ResponseModel_message(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_ResponseModel_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SelfCareReponse_ownStatement(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ResponseModel",
+		Object:     "SelfCareReponse",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -2097,8 +2232,8 @@ func (ec *executionContext) fieldContext_ResponseModel_message(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _SignUpPayload_status(ctx context.Context, field graphql.CollectedField, obj *model.SignUpPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SignUpPayload_status(ctx, field)
+func (ec *executionContext) _SelfCareReponse_thingsYouWillDoTodayToNutureYourself(ctx context.Context, field graphql.CollectedField, obj *model.SelfCareReponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SelfCareReponse_thingsYouWillDoTodayToNutureYourself(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2111,51 +2246,7 @@ func (ec *executionContext) _SignUpPayload_status(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Status, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_SignUpPayload_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "SignUpPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _SignUpPayload_message(ctx context.Context, field graphql.CollectedField, obj *model.SignUpPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SignUpPayload_message(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
+		return obj.ThingsYouWillDoTodayToNutureYourself, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2172,9 +2263,9 @@ func (ec *executionContext) _SignUpPayload_message(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SignUpPayload_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SelfCareReponse_thingsYouWillDoTodayToNutureYourself(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "SignUpPayload",
+		Object:     "SelfCareReponse",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -2185,8 +2276,8 @@ func (ec *executionContext) fieldContext_SignUpPayload_message(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _SignUpPayload_loginResponse(ctx context.Context, field graphql.CollectedField, obj *model.SignUpPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SignUpPayload_loginResponse(ctx, field)
+func (ec *executionContext) _SelfCareReponse_thingsThatYouLoveAboutYourself(ctx context.Context, field graphql.CollectedField, obj *model.SelfCareReponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SelfCareReponse_thingsThatYouLoveAboutYourself(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2199,7 +2290,7 @@ func (ec *executionContext) _SignUpPayload_loginResponse(ctx context.Context, fi
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.LoginResponse, nil
+		return obj.ThingsThatYouLoveAboutYourself, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2211,27 +2302,63 @@ func (ec *executionContext) _SignUpPayload_loginResponse(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.LoginResponse)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNLoginResponse2ᚖchallengeᚋgraphᚋmodelᚐLoginResponse(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SignUpPayload_loginResponse(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SelfCareReponse_thingsThatYouLoveAboutYourself(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "SignUpPayload",
+		Object:     "SelfCareReponse",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "challengeStartDate":
-				return ec.fieldContext_LoginResponse_challengeStartDate(ctx, field)
-			case "challenges":
-				return ec.fieldContext_LoginResponse_challenges(ctx, field)
-			case "user":
-				return ec.fieldContext_LoginResponse_user(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type LoginResponse", field.Name)
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SelfCareReponse_thingsTodayThatBringYouJoyAndFlow(ctx context.Context, field graphql.CollectedField, obj *model.SelfCareReponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SelfCareReponse_thingsTodayThatBringYouJoyAndFlow(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ThingsTodayThatBringYouJoyAndFlow, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SelfCareReponse_thingsTodayThatBringYouJoyAndFlow(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SelfCareReponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4247,6 +4374,40 @@ func (ec *executionContext) unmarshalInputForgotPasswordRequestInput(ctx context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputGetSelfCareFormRequestInput(ctx context.Context, obj interface{}) (model.GetSelfCareFormRequestInput, error) {
+	var it model.GetSelfCareFormRequestInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"day", "level"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "day":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("day"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Day = data
+		case "level":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("level"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Level = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputLoginRequestInput(ctx context.Context, obj interface{}) (model.LoginRequestInput, error) {
 	var it model.LoginRequestInput
 	asMap := map[string]interface{}{}
@@ -4322,6 +4483,61 @@ func (ec *executionContext) unmarshalInputResetPasswordRequestInput(ctx context.
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSelfCareFormRequestInput(ctx context.Context, obj interface{}) (model.SelfCareFormRequestInput, error) {
+	var it model.SelfCareFormRequestInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"challengeId", "ownStatement", "thingsYouWillDoTodayToNutureYourself", "thingsThatYouLoveAboutYourself", "thingsTodayThatBringYouJoyAndFlow"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "challengeId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("challengeId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChallengeID = data
+		case "ownStatement":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownStatement"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnStatement = data
+		case "thingsYouWillDoTodayToNutureYourself":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thingsYouWillDoTodayToNutureYourself"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThingsYouWillDoTodayToNutureYourself = data
+		case "thingsThatYouLoveAboutYourself":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thingsThatYouLoveAboutYourself"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThingsThatYouLoveAboutYourself = data
+		case "thingsTodayThatBringYouJoyAndFlow":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("thingsTodayThatBringYouJoyAndFlow"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThingsTodayThatBringYouJoyAndFlow = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSignUpRequestInput(ctx context.Context, obj interface{}) (model.SignUpRequestInput, error) {
 	var it model.SignUpRequestInput
 	asMap := map[string]interface{}{}
@@ -4329,20 +4545,13 @@ func (ec *executionContext) unmarshalInputSignUpRequestInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"username", "email", "password"}
+	fieldsInOrder := [...]string{"email"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "username":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Username = data
 		case "email":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -4350,13 +4559,6 @@ func (ec *executionContext) unmarshalInputSignUpRequestInput(ctx context.Context
 				return it, err
 			}
 			it.Email = data
-		case "password":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Password = data
 		}
 	}
 
@@ -4411,42 +4613,63 @@ func (ec *executionContext) unmarshalInputSocialLoginRequestInput(ctx context.Co
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputVerifyOtpForResetPasswordRequestInput(ctx context.Context, obj interface{}) (model.VerifyOtpForResetPasswordRequestInput, error) {
-	var it model.VerifyOtpForResetPasswordRequestInput
+func (ec *executionContext) unmarshalInputTaskInput(ctx context.Context, obj interface{}) (model.TaskInput, error) {
+	var it model.TaskInput
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"email", "otp"}
+	fieldsInOrder := [...]string{"level", "day", "date", "completedTasks", "status"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "email":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+		case "level":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("level"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Level = data
+		case "day":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("day"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Day = data
+		case "date":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("date"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Email = data
-		case "otp":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("otp"))
+			it.Date = data
+		case "completedTasks":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedTasks"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompletedTasks = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Otp = data
+			it.Status = data
 		}
 	}
 
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputVerifyOtpRequestInput(ctx context.Context, obj interface{}) (model.VerifyOtpRequestInput, error) {
-	var it model.VerifyOtpRequestInput
+func (ec *executionContext) unmarshalInputUserReq(ctx context.Context, obj interface{}) (model.UserReq, error) {
+	var it model.UserReq
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -4507,6 +4730,81 @@ func (ec *executionContext) unmarshalInputVerifyOtpRequestInput(ctx context.Cont
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputVerifyOtpForResetPasswordRequestInput(ctx context.Context, obj interface{}) (model.VerifyOtpForResetPasswordRequestInput, error) {
+	var it model.VerifyOtpForResetPasswordRequestInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"email", "otp"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "otp":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("otp"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Otp = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputVerifyOtpRequestInput(ctx context.Context, obj interface{}) (model.VerifyOtpRequestInput, error) {
+	var it model.VerifyOtpRequestInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"user", "challengeStartDate", "task"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "user":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user"))
+			data, err := ec.unmarshalNUserReq2ᚖchallengeᚋgraphᚋmodelᚐUserReq(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.User = data
+		case "challengeStartDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("challengeStartDate"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChallengeStartDate = data
+		case "task":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task"))
+			data, err := ec.unmarshalNTaskInput2ᚖchallengeᚋgraphᚋmodelᚐTaskInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Task = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4528,6 +4826,11 @@ func (ec *executionContext) _Challenge(ctx context.Context, sel ast.SelectionSet
 			out.Values[i] = graphql.MarshalString("Challenge")
 		case "id":
 			out.Values[i] = ec._Challenge_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "userId":
+			out.Values[i] = ec._Challenge_userId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4579,55 +4882,6 @@ func (ec *executionContext) _Challenge(ctx context.Context, sel ast.SelectionSet
 	return out
 }
 
-var loginPayloadImplementors = []string{"LoginPayload"}
-
-func (ec *executionContext) _LoginPayload(ctx context.Context, sel ast.SelectionSet, obj *model.LoginPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, loginPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("LoginPayload")
-		case "status":
-			out.Values[i] = ec._LoginPayload_status(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "message":
-			out.Values[i] = ec._LoginPayload_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "data":
-			out.Values[i] = ec._LoginPayload_data(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var loginResponseImplementors = []string{"LoginResponse"}
 
 func (ec *executionContext) _LoginResponse(ctx context.Context, sel ast.SelectionSet, obj *model.LoginResponse) graphql.Marshaler {
@@ -4639,6 +4893,11 @@ func (ec *executionContext) _LoginResponse(ctx context.Context, sel ast.Selectio
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("LoginResponse")
+		case "user":
+			out.Values[i] = ec._LoginResponse_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "challengeStartDate":
 			out.Values[i] = ec._LoginResponse_challengeStartDate(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -4646,11 +4905,6 @@ func (ec *executionContext) _LoginResponse(ctx context.Context, sel ast.Selectio
 			}
 		case "challenges":
 			out.Values[i] = ec._LoginResponse_challenges(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "user":
-			out.Values[i] = ec._LoginResponse_user(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4696,58 +4950,72 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
-		case "loginResponse":
+		case "login":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_loginResponse(ctx, field)
+				return ec._Mutation_login(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "socialLoginResponse":
+		case "socialLogin":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_socialLoginResponse(ctx, field)
+				return ec._Mutation_socialLogin(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "signUpResponse":
+		case "signup":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_signUpResponse(ctx, field)
+				return ec._Mutation_signup(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "verifyOtpResponse":
+		case "verifyOtp":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_verifyOtpResponse(ctx, field)
+				return ec._Mutation_verifyOtp(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "forgotPasswordResponse":
+		case "forgotPassword":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_forgotPasswordResponse(ctx, field)
+				return ec._Mutation_forgotPassword(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "verifyOtpForResetPasswordResponse":
+		case "verifyOtpForResetPassword":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_verifyOtpForResetPasswordResponse(ctx, field)
+				return ec._Mutation_verifyOtpForResetPassword(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "resetPasswordResponse":
+		case "resetPassword":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_resetPasswordResponse(ctx, field)
+				return ec._Mutation_resetPassword(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "status":
+		case "changeStatus":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_status(ctx, field)
+				return ec._Mutation_changeStatus(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "selfCareForm":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_selfCareForm(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "selfCareFormData":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_selfCareFormData(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -4847,73 +5115,39 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
-var responseModelImplementors = []string{"ResponseModel"}
+var selfCareReponseImplementors = []string{"SelfCareReponse"}
 
-func (ec *executionContext) _ResponseModel(ctx context.Context, sel ast.SelectionSet, obj *model.ResponseModel) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, responseModelImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ResponseModel")
-		case "status":
-			out.Values[i] = ec._ResponseModel_status(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "message":
-			out.Values[i] = ec._ResponseModel_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var signUpPayloadImplementors = []string{"SignUpPayload"}
-
-func (ec *executionContext) _SignUpPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SignUpPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, signUpPayloadImplementors)
+func (ec *executionContext) _SelfCareReponse(ctx context.Context, sel ast.SelectionSet, obj *model.SelfCareReponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, selfCareReponseImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("SignUpPayload")
-		case "status":
-			out.Values[i] = ec._SignUpPayload_status(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("SelfCareReponse")
+		case "id":
+			out.Values[i] = ec._SelfCareReponse_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "message":
-			out.Values[i] = ec._SignUpPayload_message(ctx, field, obj)
+		case "ownStatement":
+			out.Values[i] = ec._SelfCareReponse_ownStatement(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "loginResponse":
-			out.Values[i] = ec._SignUpPayload_loginResponse(ctx, field, obj)
+		case "thingsYouWillDoTodayToNutureYourself":
+			out.Values[i] = ec._SelfCareReponse_thingsYouWillDoTodayToNutureYourself(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "thingsThatYouLoveAboutYourself":
+			out.Values[i] = ec._SelfCareReponse_thingsThatYouLoveAboutYourself(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "thingsTodayThatBringYouJoyAndFlow":
+			out.Values[i] = ec._SelfCareReponse_thingsTodayThatBringYouJoyAndFlow(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -5335,6 +5569,10 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNChallenge2challengeᚋgraphᚋmodelᚐChallenge(ctx context.Context, sel ast.SelectionSet, v model.Challenge) graphql.Marshaler {
+	return ec._Challenge(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNChallenge2ᚕᚖchallengeᚋgraphᚋmodelᚐChallengeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Challenge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -5399,6 +5637,11 @@ func (ec *executionContext) unmarshalNForgotPasswordRequestInput2challengeᚋgra
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNGetSelfCareFormRequestInput2challengeᚋgraphᚋmodelᚐGetSelfCareFormRequestInput(ctx context.Context, v interface{}) (model.GetSelfCareFormRequestInput, error) {
+	res, err := ec.unmarshalInputGetSelfCareFormRequestInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5429,23 +5672,13 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) marshalNLoginPayload2challengeᚋgraphᚋmodelᚐLoginPayload(ctx context.Context, sel ast.SelectionSet, v model.LoginPayload) graphql.Marshaler {
-	return ec._LoginPayload(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNLoginPayload2ᚖchallengeᚋgraphᚋmodelᚐLoginPayload(ctx context.Context, sel ast.SelectionSet, v *model.LoginPayload) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._LoginPayload(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalNLoginRequestInput2challengeᚋgraphᚋmodelᚐLoginRequestInput(ctx context.Context, v interface{}) (model.LoginRequestInput, error) {
 	res, err := ec.unmarshalInputLoginRequestInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNLoginResponse2challengeᚋgraphᚋmodelᚐLoginResponse(ctx context.Context, sel ast.SelectionSet, v model.LoginResponse) graphql.Marshaler {
+	return ec._LoginResponse(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNLoginResponse2ᚖchallengeᚋgraphᚋmodelᚐLoginResponse(ctx context.Context, sel ast.SelectionSet, v *model.LoginResponse) graphql.Marshaler {
@@ -5463,18 +5696,23 @@ func (ec *executionContext) unmarshalNResetPasswordRequestInput2challengeᚋgrap
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNResponseModel2challengeᚋgraphᚋmodelᚐResponseModel(ctx context.Context, sel ast.SelectionSet, v model.ResponseModel) graphql.Marshaler {
-	return ec._ResponseModel(ctx, sel, &v)
+func (ec *executionContext) unmarshalNSelfCareFormRequestInput2challengeᚋgraphᚋmodelᚐSelfCareFormRequestInput(ctx context.Context, v interface{}) (model.SelfCareFormRequestInput, error) {
+	res, err := ec.unmarshalInputSelfCareFormRequestInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNResponseModel2ᚖchallengeᚋgraphᚋmodelᚐResponseModel(ctx context.Context, sel ast.SelectionSet, v *model.ResponseModel) graphql.Marshaler {
+func (ec *executionContext) marshalNSelfCareReponse2challengeᚋgraphᚋmodelᚐSelfCareReponse(ctx context.Context, sel ast.SelectionSet, v model.SelfCareReponse) graphql.Marshaler {
+	return ec._SelfCareReponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSelfCareReponse2ᚖchallengeᚋgraphᚋmodelᚐSelfCareReponse(ctx context.Context, sel ast.SelectionSet, v *model.SelfCareReponse) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._ResponseModel(ctx, sel, v)
+	return ec._SelfCareReponse(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSignUpRequestInput2challengeᚋgraphᚋmodelᚐSignUpRequestInput(ctx context.Context, v interface{}) (model.SignUpRequestInput, error) {
@@ -5534,6 +5772,15 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	return ret
 }
 
+func (ec *executionContext) unmarshalNTaskInput2ᚖchallengeᚋgraphᚋmodelᚐTaskInput(ctx context.Context, v interface{}) (*model.TaskInput, error) {
+	res, err := ec.unmarshalInputTaskInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUser2challengeᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
+	return ec._User(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNUser2ᚖchallengeᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -5542,6 +5789,11 @@ func (ec *executionContext) marshalNUser2ᚖchallengeᚋgraphᚋmodelᚐUser(ctx
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUserReq2ᚖchallengeᚋgraphᚋmodelᚐUserReq(ctx context.Context, v interface{}) (*model.UserReq, error) {
+	res, err := ec.unmarshalInputUserReq(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNVerifyOtpForResetPasswordRequestInput2challengeᚋgraphᚋmodelᚐVerifyOtpForResetPasswordRequestInput(ctx context.Context, v interface{}) (model.VerifyOtpForResetPasswordRequestInput, error) {

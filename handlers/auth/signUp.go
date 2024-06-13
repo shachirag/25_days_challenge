@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/ses"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func SignUpUser(ctx context.Context, db *database.DB,sesClient *ses.Client, userInfo model.SignUpRequestInput, ) *model.ResponseModel {
+func SignUpUser(ctx context.Context, db *database.DB, sesClient *ses.Client, userInfo model.SignUpRequestInput) (*model.User, error) {
 	customerColl := db.GetCollection("user")
 	otpColl := db.GetCollection("otp")
 
@@ -24,17 +25,11 @@ func SignUpUser(ctx context.Context, db *database.DB,sesClient *ses.Client, user
 
 	exists, err := customerColl.CountDocuments(ctx, filter)
 	if err != nil {
-		return &model.ResponseModel{
-			Status:  false,
-			Message: "Email is already in use.",
-		}
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Database error: "+err.Error())
 	}
 
 	if exists > 0 {
-		return &model.ResponseModel{
-			Status:  false,
-			Message: "Email is already in use.",
-		}
+		return nil, fiber.NewError(fiber.StatusConflict, "Email is already in use.")
 	}
 
 	id := primitive.NewObjectID()
@@ -48,22 +43,13 @@ func SignUpUser(ctx context.Context, db *database.DB,sesClient *ses.Client, user
 
 	_, err = otpColl.InsertOne(ctx, otpData)
 	if err != nil {
-		return &model.ResponseModel{
-			Status:  false,
-			Message: "Error hash password",
-		}
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error storing OTP: "+err.Error())
 	}
 
 	_, err = utils.SendEmail(sesClient, userInfo.Email, otp)
 	if err != nil {
-		return &model.ResponseModel{
-			Status:  false,
-			Message: "Error Sending OTP to your email address.",
-		}
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error sending OTP to email: "+err.Error())
 	}
 
-	return &model.ResponseModel{
-		Status:  false,
-		Message: "Otp sent successfully.",
-	}
+	return &model.User{}, nil
 }

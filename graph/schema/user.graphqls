@@ -1,34 +1,46 @@
-scalar Int32
-
 type Query {
   hello: String!
 }
 
 type Mutation {
-  loginResponse(input: LoginRequestInput!): LoginPayload!
-  socialLoginResponse(input: SocialLoginRequestInput!): LoginPayload!
-  signUpResponse(input: SignUpRequestInput!): ResponseModel!
-  verifyOtpResponse(input: VerifyOtpRequestInput!): LoginPayload!
-  forgotPasswordResponse(input: ForgotPasswordRequestInput!): ResponseModel!
-  verifyOtpForResetPasswordResponse(
+  login(input: LoginRequestInput!): LoginResponse!
+  socialLogin(input: SocialLoginRequestInput!): LoginResponse!
+  signup(input: SignUpRequestInput!): User!
+  verifyOtp(input: VerifyOtpRequestInput!): LoginResponse!
+  forgotPassword(input: ForgotPasswordRequestInput!): User!
+  verifyOtpForResetPassword(
     input: VerifyOtpForResetPasswordRequestInput!
-  ): ResponseModel!
-  resetPasswordResponse(input: ResetPasswordRequestInput!): ResponseModel!
-  status(input: ChangeStatusRequestInput!): ResponseModel!
+  ): User!
+  resetPassword(input: ResetPasswordRequestInput!): User!
+  changeStatus(input: ChangeStatusRequestInput!): Challenge!
+  selfCareForm(input: SelfCareFormRequestInput!): SelfCareReponse!
+  selfCareFormData(
+    userId: ID!
+    input: GetSelfCareFormRequestInput!
+  ): SelfCareReponse!
 }
 
-input LoginRequestInput {
-  email: String!
-  password: String!
-}
-
-input SignUpRequestInput {
-  username: String!
-  email: String!
-  password: String!
+type LoginResponse {
+  user: User!
+  challengeStartDate: String!
+  challenges: [Challenge!]!
 }
 
 input VerifyOtpRequestInput {
+  user: UserReq!
+  challengeStartDate: String!
+  task: TaskInput!
+}
+
+input TaskInput {
+  level: Int!
+  day: Int!
+  date: String!
+  completedTasks: [String!]!
+  status: String!
+}
+
+input UserReq {
   otp: String!
   username: String!
   email: String!
@@ -37,20 +49,9 @@ input VerifyOtpRequestInput {
   appleId: String!
 }
 
-type LoginPayload {
-  status: Boolean!
-  message: String!
-  data: LoginResponse!
-}
-
-type LoginResponse {
-  challengeStartDate: String!
-  challenges: [Challenge!]!
-  user: User!
-}
-
 type Challenge {
   id: ID!
+  userId: ID!
   level: Int!
   day: Int!
   date: String!
@@ -65,15 +66,13 @@ type User {
   token: String!
 }
 
-type SignUpPayload {
-  status: Boolean!
-  message: String!
-  loginResponse: LoginResponse!
+input LoginRequestInput {
+  email: String!
+  password: String!
 }
 
-type ResponseModel {
-  status: Boolean!
-  message: String!
+input SignUpRequestInput {
+  email: String!
 }
 
 input ForgotPasswordRequestInput {
@@ -101,4 +100,25 @@ input SocialLoginRequestInput {
 input ChangeStatusRequestInput {
   status: String!
   challengeId: ID!
+}
+
+input SelfCareFormRequestInput {
+  challengeId: ID!
+  ownStatement: String!
+  thingsYouWillDoTodayToNutureYourself: String!
+  thingsThatYouLoveAboutYourself: String!
+  thingsTodayThatBringYouJoyAndFlow: String!
+}
+
+input GetSelfCareFormRequestInput {
+  day: Int!
+  level: Int!
+}
+
+type SelfCareReponse {
+  id: ID!
+  ownStatement: String!
+  thingsYouWillDoTodayToNutureYourself: String!
+  thingsThatYouLoveAboutYourself: String!
+  thingsTodayThatBringYouJoyAndFlow: String!
 }

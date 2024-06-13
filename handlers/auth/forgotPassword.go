@@ -10,12 +10,14 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/ses"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func ForgotPassword(ctx context.Context, db *database.DB, sesClient *ses.Client, input model.ForgotPasswordRequestInput) *model.ResponseModel {
+func ForgotPassword(ctx context.Context, db *database.DB, sesClient *ses.Client, input model.ForgotPasswordRequestInput) (*model.User, error) {
+
 	var (
 		userColl = db.GetCollection("user")
 		otpColl  = db.GetCollection("otp")
@@ -29,19 +31,13 @@ func ForgotPassword(ctx context.Context, db *database.DB, sesClient *ses.Client,
 	err := userColl.FindOne(ctx, filter).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return &model.ResponseModel{
-				Status:  false,
-				Message: "No User Found",
-			}
+			return nil, fiber.NewError(fiber.StatusBadRequest, "user not found")
 		}
-
-		return &model.ResponseModel{
-			Status:  false,
-			Message: "Internal server error, while getting the user: " + err.Error(),
-		}
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Internal server error while fetching the user.")
 	}
 
 	otp := utils.Generate6DigitOtp()
+
 	otpData := entity.OtpEntity{
 		Id:        primitive.NewObjectID(),
 		Otp:       otp,
@@ -51,22 +47,17 @@ func ForgotPassword(ctx context.Context, db *database.DB, sesClient *ses.Client,
 
 	_, err = otpColl.InsertOne(ctx, otpData)
 	if err != nil {
-		return &model.ResponseModel{
-			Status:  false,
-			Message: "Failed to store OTP in the database: " + err.Error(),
-		}
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to store OTP in the database: "+err.Error())
 	}
 
 	_, err = utils.SendEmail(sesClient, user.UserName, otp)
 	if err != nil {
-		return &model.ResponseModel{
-			Status:  false,
-			Message: "Internal server error, while sending email: " + err.Error(),
-		}
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Internal server error while sending the email: "+err.Error())
 	}
 
-	return &model.ResponseModel{
-		Status:  true,
-		Message: "Successfully send 6 digit OTP.",
-	}
+	return &model.User{
+		ID:       user.Id.Hex(),
+		UserName: user.UserName,
+		Email:    user.Email,
+	}, nil
 }

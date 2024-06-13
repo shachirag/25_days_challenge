@@ -8,52 +8,40 @@ import (
 	"context"
 	"strings"
 
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func ResetPassword(ctx context.Context, db *database.DB, input model.ResetPasswordRequestInput) *model.ResponseModel {
+func ResetPassword(ctx context.Context, db *database.DB, input model.ResetPasswordRequestInput) (*model.User, error) {
 	var (
 		userColl = db.GetCollection("user")
-		admin     entity.CustomerEntity
+		user    entity.CustomerEntity
 	)
 
 	smallEmail := strings.ToLower(input.Email)
 
-	err := userColl.FindOne(ctx, bson.M{"email": smallEmail}).Decode(&admin)
+	err := userColl.FindOne(ctx, bson.M{"email": smallEmail}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return &model.ResponseModel{
-				Status:  false,
-				Message: "No user found",
-			}
+			return nil, fiber.NewError(fiber.StatusNotFound, "No user found with the provided email.")
 		}
-
-		return &model.ResponseModel{
-			Status:  false,
-			Message: "Internal server error, while getting the user: " + err.Error(),
-		}
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Internal server error while fetching the user: "+err.Error())
 	}
 
-	// Hash the new password
 	hashedPassword, err := utils.HashPassword(input.NewPassword)
 	if err != nil {
-		return &model.ResponseModel{
-			Status:  false,
-			Message: "Failed to hash the password: " + err.Error(),
-		}
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to hash the password: "+err.Error())
 	}
 
-	_, err = userColl.UpdateOne(ctx, bson.M{"_id": admin.Id}, bson.M{"$set": bson.M{"password": hashedPassword}})
+	_, err = userColl.UpdateOne(ctx, bson.M{"_id": user.Id}, bson.M{"$set": bson.M{"password": hashedPassword}})
 	if err != nil {
-		return &model.ResponseModel{
-			Status:  false,
-			Message: "Failed to update password in the database: " + err.Error(),
-		}
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to update the password in the database: "+err.Error())
 	}
 
-	return &model.ResponseModel{
-		Status:  true,
-		Message: "Password updated successfully after OTP verification",
-	}
+	return &model.User{
+		ID:       user.Id.Hex(),
+		UserName: user.UserName,
+		Email:    user.Email,
+	}, nil
 }

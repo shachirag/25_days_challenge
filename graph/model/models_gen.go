@@ -4,6 +4,7 @@ package model
 
 type Challenge struct {
 	ID             string   `json:"id"`
+	UserID         string   `json:"userId"`
 	Level          int      `json:"level"`
 	Day            int      `json:"day"`
 	Date           string   `json:"date"`
@@ -20,10 +21,9 @@ type ForgotPasswordRequestInput struct {
 	Email string `json:"email"`
 }
 
-type LoginPayload struct {
-	Status  bool           `json:"status"`
-	Message string         `json:"message"`
-	Data    *LoginResponse `json:"data"`
+type GetSelfCareFormRequestInput struct {
+	Day   int `json:"day"`
+	Level int `json:"level"`
 }
 
 type LoginRequestInput struct {
@@ -32,9 +32,9 @@ type LoginRequestInput struct {
 }
 
 type LoginResponse struct {
+	User               *User        `json:"user"`
 	ChallengeStartDate string       `json:"challengeStartDate"`
 	Challenges         []*Challenge `json:"challenges"`
-	User               *User        `json:"user"`
 }
 
 type Mutation struct {
@@ -49,21 +49,24 @@ type ResetPasswordRequestInput struct {
 	ConfirmPassword string `json:"confirmPassword"`
 }
 
-type ResponseModel struct {
-	Status  bool   `json:"status"`
-	Message string `json:"message"`
+type SelfCareFormRequestInput struct {
+	ChallengeID                          string `json:"challengeId"`
+	OwnStatement                         string `json:"ownStatement"`
+	ThingsYouWillDoTodayToNutureYourself string `json:"thingsYouWillDoTodayToNutureYourself"`
+	ThingsThatYouLoveAboutYourself       string `json:"thingsThatYouLoveAboutYourself"`
+	ThingsTodayThatBringYouJoyAndFlow    string `json:"thingsTodayThatBringYouJoyAndFlow"`
 }
 
-type SignUpPayload struct {
-	Status        bool           `json:"status"`
-	Message       string         `json:"message"`
-	LoginResponse *LoginResponse `json:"loginResponse"`
+type SelfCareReponse struct {
+	ID                                   string `json:"id"`
+	OwnStatement                         string `json:"ownStatement"`
+	ThingsYouWillDoTodayToNutureYourself string `json:"thingsYouWillDoTodayToNutureYourself"`
+	ThingsThatYouLoveAboutYourself       string `json:"thingsThatYouLoveAboutYourself"`
+	ThingsTodayThatBringYouJoyAndFlow    string `json:"thingsTodayThatBringYouJoyAndFlow"`
 }
 
 type SignUpRequestInput struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email string `json:"email"`
 }
 
 type SocialLoginRequestInput struct {
@@ -73,11 +76,28 @@ type SocialLoginRequestInput struct {
 	Name     string  `json:"name"`
 }
 
+type TaskInput struct {
+	Level          int      `json:"level"`
+	Day            int      `json:"day"`
+	Date           string   `json:"date"`
+	CompletedTasks []string `json:"completedTasks"`
+	Status         string   `json:"status"`
+}
+
 type User struct {
 	ID       string `json:"id"`
 	Email    string `json:"email"`
 	UserName string `json:"userName"`
 	Token    string `json:"token"`
+}
+
+type UserReq struct {
+	Otp      string `json:"otp"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	GoogleID string `json:"googleId"`
+	AppleID  string `json:"appleId"`
 }
 
 type VerifyOtpForResetPasswordRequestInput struct {
@@ -86,10 +106,7 @@ type VerifyOtpForResetPasswordRequestInput struct {
 }
 
 type VerifyOtpRequestInput struct {
-	Otp      string `json:"otp"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	GoogleID string `json:"googleId"`
-	AppleID  string `json:"appleId"`
+	User               *UserReq   `json:"user"`
+	ChallengeStartDate string     `json:"challengeStartDate"`
+	Task               *TaskInput `json:"task"`
 }
