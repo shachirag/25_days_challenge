@@ -1,68 +1,43 @@
 package middleware
 
 import (
-	"context"
+	"errors"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 )
 
-type contextKey string
+type UserContextKey string
 
-const userCtxKey = contextKey("user")
-
-type User struct {
-	ID    string
-	Email string
-}
-
-// JWTMiddleware handles JWT token verification and user information extraction
-func JWTMiddleware(next http.Handler) http.Handler {
+// ValidateJWT validates the JWT token in the Authorization header
+func ValidateJWT(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Extract JWT token from Authorization header
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			http.Error(w, "Authorization header is required", http.StatusUnauthorized)
 			return
 		}
-		tokenString := strings.Split(authHeader, " ")[1]
 
-		// Parse and validate the JWT token
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// Validate the token signing method
+		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenStr == authHeader {
+			http.Error(w, "Bearer token is required", http.StatusUnauthorized)
+			return
+		}
+
+		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrSignatureInvalid
+				return nil, errors.New("unexpected signing method")
 			}
-			// Return the secret key used to sign the token
-			return []byte(os.Getenv("JWT_SECRET")), nil
+			return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 		})
 		if err != nil || !token.Valid {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
 
-		// Extract user ID from token claims
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok || !token.Valid {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		userID, ok := claims["userId"].(string)
-		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		// Add user ID to the context
-		ctx := context.WithValue(r.Context(), userCtxKey, userID)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		// If token is valid, continue with the request
+		next.ServeHTTP(w, r)
 	})
-}
-
-// ForContext retrieves the user ID from the context
-func ForContext(ctx context.Context) string {
-	raw, _ := ctx.Value(userCtxKey).(string)
-	return raw
 }

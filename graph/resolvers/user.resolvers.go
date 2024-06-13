@@ -76,6 +76,15 @@ func (r *mutationResolver) ResetPassword(ctx context.Context, input model.ResetP
 
 // ChangeStatus is the resolver for the changeStatus field.
 func (r *mutationResolver) ChangeStatus(ctx context.Context, input model.ChangeStatusRequestInput) (*model.Challenge, error) {
+	// Extract user claims from context
+	// claims, ok := middleware.GetUserFromContext(ctx)
+	// if !ok {
+	// 	return nil, fmt.Errorf("unauthorized")
+	// }
+
+	// Example: Check user role or ID from claims
+	// userID := claims["sub"].(string)
+	// Perform the necessary operation
 	changeStatusPayload, err := auth.ChangeStatus(ctx, r.DB, input)
 	if err != nil {
 		return nil, err
@@ -85,6 +94,7 @@ func (r *mutationResolver) ChangeStatus(ctx context.Context, input model.ChangeS
 
 // SelfCareForm is the resolver for the selfCareForm field.
 func (r *mutationResolver) SelfCareForm(ctx context.Context, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error) {
+
 	selfCarePayload, err := auth.SelfCareForm(ctx, r.DB, input)
 	if err != nil {
 		return nil, err
