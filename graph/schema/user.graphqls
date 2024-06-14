@@ -37,7 +37,6 @@ input TaskInput {
   day: Int!
   date: String!
   completedTasks: [String!]!
-  status: String!
 }
 
 input UserReq {

@@ -1,79 +1,9 @@
-package main
-
-import (
-	"challenge/database"
-	graph "challenge/graph/resolvers"
-	"challenge/middleware"
-	"log"
-	"net/http"
-	"os"
-
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/playground"
-)
-
-const defaultPort = "8080"
-
-func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
-	}
-
-	err := database.SetupAWSClient()
-	if err != nil {
-		log.Fatalf("Failed to setup AWS clients: %v", err)
-	}
-
-	db := database.Connect()
-	s3 := database.GetS3Uploader()
-	ses := database.GetSesClient()
-	resolver := &graph.Resolver{
-		DB:        db,
-		S3Client:  s3,
-		SESClient: ses,
-	}
-
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
-
-	http.Handle("/query", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		opName := r.Header.Get("X-GraphQL-Operation-Name")
-		if opName == "" {
-			http.Error(w, "Operation name header is required", http.StatusBadRequest)
-			return
-		}
-
-		authRequiredOperations := map[string]bool{
-			"ChangeStatus":              true,
-			"SelfCareForm":              true,
-			"GetSelfCareFormData":       true,
-			"LoginCustomer":             false,
-			"ForgotPassword":            false,
-			"ResetPassword":             false,
-			"SignUpUser":                false,
-			"SocialLoginCustomer":       false,
-			"VerifyOtpForResetPassword": false,
-			"VerifyOtp":                 false,
-		}
-
-		if authRequiredOperations[opName] {
-			middleware.ValidateJWT(srv).ServeHTTP(w, r)
-		} else {
-			srv.ServeHTTP(w, r)
-		}
-	}))
-
-	http.Handle("/", playground.Handler("GraphQL Playground", "/query"))
-
-	log.Printf("connect to http://localhost:%s/ for GraphQL Playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
-}
-
 // package main
 
 // import (
 // 	"challenge/database"
 // 	graph "challenge/graph/resolvers"
+// 	"challenge/middleware"
 // 	"log"
 // 	"net/http"
 // 	"os"
@@ -103,12 +33,83 @@ func main() {
 // 		S3Client:  s3,
 // 		SESClient: ses,
 // 	}
+
 // 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 
-// 	http.Handle("/query", srv)
+// 	http.Handle("/query", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		opName := r.Header.Get("X-GraphQL-Operation-Name")
+// 		if opName == "" {
+// 			http.Error(w, "Operation name header is required", http.StatusBadRequest)
+// 			return
+// 		}
 
-// 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+// 		authRequiredOperations := map[string]bool{
+// 			"ChangeStatus":              true,
+// 			"SelfCareForm":              true,
+// 			"GetSelfCareFormData":       true,
+// 			"LoginCustomer":             false,
+// 			"ForgotPassword":            false,
+// 			"ResetPassword":             false,
+// 			"SignUpUser":                false,
+// 			"SocialLoginCustomer":       false,
+// 			"VerifyOtpForResetPassword": false,
+// 			"VerifyOtp":                 false,
+// 		}
 
-// 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+// 		if authRequiredOperations[opName] {
+// 			middleware.ValidateJWT(srv).ServeHTTP(w, r)
+// 		} else {
+// 			srv.ServeHTTP(w, r)
+// 		}
+// 	}))
+
+// 	http.Handle("/", playground.Handler("GraphQL Playground", "/query"))
+
+// 	log.Printf("connect to http://localhost:%s/ for GraphQL Playground", port)
 // 	log.Fatal(http.ListenAndServe(":"+port, nil))
 // }
+
+
+package main
+
+import (
+	"challenge/database"
+	graph "challenge/graph/resolvers"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
+)
+
+const defaultPort = "8080"
+
+func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = defaultPort
+	}
+
+	err := database.SetupAWSClient()
+	if err != nil {
+		log.Fatalf("Failed to setup AWS clients: %v", err)
+	}
+
+	db := database.Connect()
+	s3 := database.GetS3Uploader()
+	ses := database.GetSesClient()
+	resolver := &graph.Resolver{
+		DB:        db,
+		S3Client:  s3,
+		SESClient: ses,
+	}
+	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
+
+	http.Handle("/query", srv)
+
+	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+
+	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
+}

@@ -94,7 +94,6 @@ func (r *mutationResolver) ChangeStatus(ctx context.Context, input model.ChangeS
 
 // SelfCareForm is the resolver for the selfCareForm field.
 func (r *mutationResolver) SelfCareForm(ctx context.Context, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error) {
-
 	selfCarePayload, err := auth.SelfCareForm(ctx, r.DB, input)
 	if err != nil {
 		return nil, err

@@ -546,7 +546,6 @@ input TaskInput {
   day: Int!
   date: String!
   completedTasks: [String!]!
-  status: String!
 }
 
 input UserReq {
@@ -4620,7 +4619,7 @@ func (ec *executionContext) unmarshalInputTaskInput(ctx context.Context, obj int
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"level", "day", "date", "completedTasks", "status"}
+	fieldsInOrder := [...]string{"level", "day", "date", "completedTasks"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4655,13 +4654,6 @@ func (ec *executionContext) unmarshalInputTaskInput(ctx context.Context, obj int
 				return it, err
 			}
 			it.CompletedTasks = data
-		case "status":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Status = data
 		}
 	}
 

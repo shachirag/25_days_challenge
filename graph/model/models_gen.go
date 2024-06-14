@@ -81,7 +81,6 @@ type TaskInput struct {
 	Day            int      `json:"day"`
 	Date           string   `json:"date"`
 	CompletedTasks []string `json:"completedTasks"`
-	Status         string   `json:"status"`
 }
 
 type User struct {

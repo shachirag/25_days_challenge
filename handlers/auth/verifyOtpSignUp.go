@@ -59,7 +59,7 @@ func VerifyOtp(ctx context.Context, db *database.DB, data model.VerifyOtpRequest
 			Day:            data.Task.Day,
 			Date:           data.Task.Date,
 			CompletedTasks: completedTasks,
-			Status:         data.Task.Status,
+			Status:         "ongoing",
 		},
 	}
 
@@ -158,7 +158,7 @@ func createTask(ctx context.Context, db *database.DB, userId primitive.ObjectID,
 		UserId:            userId,
 		Level:             task.Level,
 		Day:               task.Day,
-		Status:            task.Status,
+		Status:            "ongoing",
 		ChalengeStartDate: challengeStartDateParsed,
 		Date:              date,
 		CompletedTasks:    completedTasks,
