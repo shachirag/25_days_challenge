@@ -555,6 +555,7 @@ input UserReq {
   password: String!
   googleId: String!
   appleId: String!
+  deviceId: String!
 }
 
 type Challenge {
@@ -577,6 +578,7 @@ type User {
 input LoginRequestInput {
   email: String!
   password: String!
+  deviceId: String!
 }
 
 input SignUpRequestInput {
@@ -4414,7 +4416,7 @@ func (ec *executionContext) unmarshalInputLoginRequestInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"email", "password"}
+	fieldsInOrder := [...]string{"email", "password", "deviceId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4435,6 +4437,13 @@ func (ec *executionContext) unmarshalInputLoginRequestInput(ctx context.Context,
 				return it, err
 			}
 			it.Password = data
+		case "deviceId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deviceId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DeviceID = data
 		}
 	}
 
@@ -4667,7 +4676,7 @@ func (ec *executionContext) unmarshalInputUserReq(ctx context.Context, obj inter
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"otp", "username", "email", "password", "googleId", "appleId"}
+	fieldsInOrder := [...]string{"otp", "username", "email", "password", "googleId", "appleId", "deviceId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4716,6 +4725,13 @@ func (ec *executionContext) unmarshalInputUserReq(ctx context.Context, obj inter
 				return it, err
 			}
 			it.AppleID = data
+		case "deviceId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deviceId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DeviceID = data
 		}
 	}
 

@@ -109,8 +109,9 @@ func findOrCreateUser(ctx context.Context, db *database.DB, userReq *model.UserR
 					AppleId:  userReq.AppleID,
 					GoogleId: userReq.GoogleID,
 				},
-				CreatedAt: time.Now().UTC(),
-				UpdatedAt: time.Now().UTC(),
+				ActiveDeviceId: userReq.DeviceID,
+				CreatedAt:      time.Now().UTC(),
+				UpdatedAt:      time.Now().UTC(),
 			}
 
 			_, err = customerColl.InsertOne(ctx, userData)

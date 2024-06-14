@@ -32,6 +32,10 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error occurred while fetching user: "+err.Error())
 	}
 
+	if customer.ActiveDeviceId != "" && customer.ActiveDeviceId != input.DeviceID {
+        return nil, fiber.NewError(fiber.StatusUnauthorized, "User is already logged in from another device")
+    }
+
 	err = bcrypt.CompareHashAndPassword([]byte(customer.Password), []byte(strings.TrimSpace(input.Password)))
 	if err != nil {
 		return nil, fiber.NewError(fiber.StatusUnauthorized, "Invalid credentials")

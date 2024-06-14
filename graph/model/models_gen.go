@@ -29,6 +29,7 @@ type GetSelfCareFormRequestInput struct {
 type LoginRequestInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	DeviceID string `json:"deviceId"`
 }
 
 type LoginResponse struct {
@@ -97,6 +98,7 @@ type UserReq struct {
 	Password string `json:"password"`
 	GoogleID string `json:"googleId"`
 	AppleID  string `json:"appleId"`
+	DeviceID string `json:"deviceId"`
 }
 
 type VerifyOtpForResetPasswordRequestInput struct {

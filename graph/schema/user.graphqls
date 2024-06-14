@@ -46,6 +46,7 @@ input UserReq {
   password: String!
   googleId: String!
   appleId: String!
+  deviceId: String!
 }
 
 type Challenge {
@@ -68,6 +69,7 @@ type User {
 input LoginRequestInput {
   email: String!
   password: String!
+  deviceId: String!
 }
 
 input SignUpRequestInput {
