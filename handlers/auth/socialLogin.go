@@ -190,10 +190,11 @@ func generateJWTToken(customer *entity.CustomerEntity, email string) (string, er
 
 	month := (time.Hour * 24) * 30
 	claims := jwt.MapClaims{
-		"Id":    customer.Id.Hex(),
-		"email": email,
-		"role":  "customer",
-		"exp":   time.Now().Add(month * 6).Unix(),
+		"Id":       customer.Id.Hex(),
+		"email":    email,
+		"role":     "customer",
+		"deviceId": customer.ActiveDeviceId,
+		"exp":      time.Now().Add(month * 6).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

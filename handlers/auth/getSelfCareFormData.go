@@ -14,6 +14,23 @@ import (
 
 func GetSelfCareFormData(ctx context.Context, db *database.DB, userId string, input model.GetSelfCareFormRequestInput) (*model.SelfCareReponse, error) {
 
+	// user, err := utils.GetUserByToken(ctx, db)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// // Validate and update active device ID
+	// deviceID, err := utils.ExtractDeviceIDFromToken(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// fmt.Println(deviceID)
+
+	// if user.ActiveDeviceId != deviceID {
+	// 	return nil, fiber.NewError(fiber.StatusUnauthorized, "Failed to update active device ID: "+err.Error())
+	// }
+
 	var task entity.TasksEntity
 
 	taskColl := db.GetCollection("task")

@@ -13,8 +13,10 @@ type Challenge struct {
 }
 
 type ChangeStatusRequestInput struct {
-	Status      string `json:"status"`
-	ChallengeID string `json:"challengeId"`
+	Level         int    `json:"level"`
+	Day           int    `json:"day"`
+	CompletedTask string `json:"completedTask"`
+	Date          string `json:"date"`
 }
 
 type ForgotPasswordRequestInput struct {

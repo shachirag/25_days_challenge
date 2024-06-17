@@ -63,7 +63,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ChangeStatus              func(childComplexity int, input model.ChangeStatusRequestInput) int
+		CompleteTask              func(childComplexity int, userID string, input model.ChangeStatusRequestInput) int
 		ForgotPassword            func(childComplexity int, input model.ForgotPasswordRequestInput) int
 		Login                     func(childComplexity int, input model.LoginRequestInput) int
 		ResetPassword             func(childComplexity int, input model.ResetPasswordRequestInput) int
@@ -103,7 +103,7 @@ type MutationResolver interface {
 	ForgotPassword(ctx context.Context, input model.ForgotPasswordRequestInput) (*model.User, error)
 	VerifyOtpForResetPassword(ctx context.Context, input model.VerifyOtpForResetPasswordRequestInput) (*model.User, error)
 	ResetPassword(ctx context.Context, input model.ResetPasswordRequestInput) (*model.User, error)
-	ChangeStatus(ctx context.Context, input model.ChangeStatusRequestInput) (*model.Challenge, error)
+	CompleteTask(ctx context.Context, userID string, input model.ChangeStatusRequestInput) (*model.Challenge, error)
 	SelfCareForm(ctx context.Context, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error)
 	SelfCareFormData(ctx context.Context, userID string, input model.GetSelfCareFormRequestInput) (*model.SelfCareReponse, error)
 }
@@ -200,17 +200,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.LoginResponse.User(childComplexity), true
 
-	case "Mutation.changeStatus":
-		if e.complexity.Mutation.ChangeStatus == nil {
+	case "Mutation.completeTask":
+		if e.complexity.Mutation.CompleteTask == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_changeStatus_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_completeTask_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ChangeStatus(childComplexity, args["input"].(model.ChangeStatusRequestInput)), true
+		return e.complexity.Mutation.CompleteTask(childComplexity, args["userId"].(string), args["input"].(model.ChangeStatusRequestInput)), true
 
 	case "Mutation.forgotPassword":
 		if e.complexity.Mutation.ForgotPassword == nil {
@@ -521,7 +521,7 @@ type Mutation {
     input: VerifyOtpForResetPasswordRequestInput!
   ): User!
   resetPassword(input: ResetPasswordRequestInput!): User!
-  changeStatus(input: ChangeStatusRequestInput!): Challenge!
+  completeTask(userId: ID!, input: ChangeStatusRequestInput!): Challenge!
   selfCareForm(input: SelfCareFormRequestInput!): SelfCareReponse!
   selfCareFormData(
     userId: ID!
@@ -608,8 +608,10 @@ input SocialLoginRequestInput {
 }
 
 input ChangeStatusRequestInput {
-  status: String!
-  challengeId: ID!
+  level: Int!
+  day: Int!
+  completedTask: String!
+  date: String!
 }
 
 input SelfCareFormRequestInput {
@@ -640,18 +642,27 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_changeStatus_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_completeTask_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.ChangeStatusRequestInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNChangeStatusRequestInput2challengeᚋgraphᚋmodelᚐChangeStatusRequestInput(ctx, tmp)
+	var arg0 string
+	if tmp, ok := rawArgs["userId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg0
+	args["userId"] = arg0
+	var arg1 model.ChangeStatusRequestInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg1, err = ec.unmarshalNChangeStatusRequestInput2challengeᚋgraphᚋmodelᚐChangeStatusRequestInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
 	return args, nil
 }
 
@@ -1767,8 +1778,8 @@ func (ec *executionContext) fieldContext_Mutation_resetPassword(ctx context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_changeStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_changeStatus(ctx, field)
+func (ec *executionContext) _Mutation_completeTask(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_completeTask(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1781,7 +1792,7 @@ func (ec *executionContext) _Mutation_changeStatus(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ChangeStatus(rctx, fc.Args["input"].(model.ChangeStatusRequestInput))
+		return ec.resolvers.Mutation().CompleteTask(rctx, fc.Args["userId"].(string), fc.Args["input"].(model.ChangeStatusRequestInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1798,7 +1809,7 @@ func (ec *executionContext) _Mutation_changeStatus(ctx context.Context, field gr
 	return ec.marshalNChallenge2ᚖchallengeᚋgraphᚋmodelᚐChallenge(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_changeStatus(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_completeTask(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -1831,7 +1842,7 @@ func (ec *executionContext) fieldContext_Mutation_changeStatus(ctx context.Conte
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_changeStatus_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_completeTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4321,27 +4332,41 @@ func (ec *executionContext) unmarshalInputChangeStatusRequestInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"status", "challengeId"}
+	fieldsInOrder := [...]string{"level", "day", "completedTask", "date"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "status":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+		case "level":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("level"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Level = data
+		case "day":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("day"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Day = data
+		case "completedTask":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedTask"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Status = data
-		case "challengeId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("challengeId"))
-			data, err := ec.unmarshalNID2string(ctx, v)
+			it.CompletedTask = data
+		case "date":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("date"))
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.ChallengeID = data
+			it.Date = data
 		}
 	}
 
@@ -5007,9 +5032,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "changeStatus":
+		case "completeTask":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_changeStatus(ctx, field)
+				return ec._Mutation_completeTask(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

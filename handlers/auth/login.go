@@ -15,7 +15,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
-
 func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginRequestInput) (*model.LoginResponse, error) {
 	customerColl := db.GetCollection("user")
 
@@ -32,15 +31,30 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error occurred while fetching user: "+err.Error())
 	}
 
+	// Check if user is already logged in from another device
 	if customer.ActiveDeviceId != "" && customer.ActiveDeviceId != input.DeviceID {
-        return nil, fiber.NewError(fiber.StatusUnauthorized, "User is already logged in from another device")
-    }
+		// Update the active device ID to the current login device ID
+		update := bson.M{
+			"$set": bson.M{
+				"activeDeviceId": input.DeviceID,
+			},
+		}
 
+		_, err := customerColl.UpdateOne(ctx, bson.M{"_id": customer.Id}, update)
+		if err != nil {
+			return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to update active device ID: "+err.Error())
+		}
+
+		// Optionally: You can send a notification or perform any cleanup for the previous session here.
+	}
+
+	// Compare hashed password
 	err = bcrypt.CompareHashAndPassword([]byte(customer.Password), []byte(strings.TrimSpace(input.Password)))
 	if err != nil {
 		return nil, fiber.NewError(fiber.StatusUnauthorized, "Invalid credentials")
 	}
 
+	// Fetch user's tasks
 	var tasks []entity.TasksEntity
 	taskFilter := bson.M{"userId": customer.Id}
 	cursor, err := db.GetCollection("task").Find(ctx, taskFilter)
@@ -61,13 +75,14 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error iterating through tasks: "+err.Error())
 	}
 
-	challenges := []*model.Challenge{}
-	for _, task := range tasks {
+	// Prepare challenges
+	challenges := make([]*model.Challenge, len(tasks))
+	for i, task := range tasks {
 		completedTasks := []string{}
 		if len(task.CompletedTasks) > 0 {
 			completedTasks = task.CompletedTasks
 		}
-		challenge := &model.Challenge{
+		challenges[i] = &model.Challenge{
 			ID:             task.Id.Hex(),
 			Level:          task.Level,
 			Day:            task.Day,
@@ -76,9 +91,9 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 			CompletedTasks: completedTasks,
 			Status:         task.Status,
 		}
-		challenges = append(challenges, challenge)
 	}
 
+	// Generate JWT token
 	_secret := os.Getenv("JWT_SECRET_KEY")
 	if _secret == "" {
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "JWT_SECRET_KEY not configured")
@@ -86,16 +101,28 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 
 	month := (time.Hour * 24) * 30
 	claims := jtoken.MapClaims{
-		"Id":    customer.Id.Hex(),
-		"email": smallEmail,
-		"role":  "customer",
-		"exp":   time.Now().Add(month * 6).Unix(),
+		"Id":       customer.Id.Hex(),
+		"email":    smallEmail,
+		"role":     "customer",
+		"deviceId": input.DeviceID, 
+		"exp":      time.Now().Add(month * 6).Unix(),
 	}
 
 	token := jtoken.NewWithClaims(jtoken.SigningMethodHS256, claims)
 	_token, err := token.SignedString([]byte(_secret))
 	if err != nil {
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to generate JWT token: "+err.Error())
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"activeDeviceId": input.DeviceID,
+		},
+	}
+
+	_, err = customerColl.UpdateOne(ctx, bson.M{"_id": customer.Id}, update)
+	if err != nil {
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to update active device ID: "+err.Error())
 	}
 
 	return &model.LoginResponse{
@@ -105,7 +132,7 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 			Email:    customer.Email,
 			Token:    _token,
 		},
-		ChallengeStartDate: tasks[0].ChalengeStartDate.Format(time.DateOnly),
+		ChallengeStartDate: tasks[0].ChalengeStartDate.Format(time.DateOnly), 
 		Challenges:         challenges,
 	}, nil
 }

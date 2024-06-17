@@ -182,10 +182,11 @@ func GenerateJWTToken(user entity.CustomerEntity) (string, error) {
 	}
 
 	claims := jtoken.MapClaims{
-		"Id":    user.Id.Hex(),
-		"email": user.Email,
-		"role":  "customer",
-		"exp":   time.Now().Add(6 * 30 * 24 * time.Hour).Unix(),
+		"Id":       user.Id.Hex(),
+		"email":    user.Email,
+		"role":     "customer",
+		"deviceId": user.ActiveDeviceId,
+		"exp":      time.Now().Add(6 * 30 * 24 * time.Hour).Unix(),
 	}
 
 	token := jtoken.NewWithClaims(jtoken.SigningMethodHS256, claims)

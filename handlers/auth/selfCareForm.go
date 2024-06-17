@@ -12,11 +12,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SelfCareForm(ctx context.Context, db *database.DB, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error) {
+func SelfCareForm(ctx context.Context, db *database.DB, deviceId string, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error) {
+
 	var (
 		taskColl = db.GetCollection("task")
 		task     entity.TasksEntity
 	)
+
+	// deviceID, err := extractDeviceIDFromToken(ctx)
+	// if err != nil {
+	// 	return nil, fiber.NewError(fiber.StatusUnauthorized, "Invalid token")
+	// }
 
 	objID, err := primitive.ObjectIDFromHex(input.ChallengeID)
 	if err != nil {
@@ -33,6 +39,15 @@ func SelfCareForm(ctx context.Context, db *database.DB, input model.SelfCareForm
 		}
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Internal server error while fetching the task: "+err.Error())
 	}
+
+	// user, err := getUserByToken(ctx, db)
+	// if err != nil {
+	// 	return nil, fiber.NewError(fiber.StatusUnauthorized, "Invalid token")
+	// }
+
+	// if user.ActiveDeviceId != deviceID {
+	// 	return nil, fiber.NewError(fiber.StatusUnauthorized, "User is already logged in from another device")
+	// }
 
 	update := bson.M{
 		"$set": bson.M{
@@ -56,3 +71,28 @@ func SelfCareForm(ctx context.Context, db *database.DB, input model.SelfCareForm
 		ThingsTodayThatBringYouJoyAndFlow:    input.ThingsTodayThatBringYouJoyAndFlow,
 	}, nil
 }
+
+// func getUserByToken(ctx context.Context, db *database.DB) (*entity.CustomerEntity, error) {
+// 	token := ctx.Value("user").(*jtoken.Token)
+// 	claims, ok := token.Claims.(jtoken.MapClaims)
+// 	if !ok {
+// 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to parse token claims")
+// 	}
+// 	userIDHex, ok := claims["Id"].(string)
+// 	if !ok {
+// 		return nil, fiber.NewError(fiber.StatusInternalServerError, "UserId not found in token claims")
+// 	}
+
+// 	userID, err := primitive.ObjectIDFromHex(userIDHex)
+// 	if err != nil {
+// 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Invalid user ID in token claims")
+// 	}
+
+// 	customerColl := db.GetCollection("user")
+// 	var user entity.CustomerEntity
+// 	err = customerColl.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
+// 	if err != nil {
+// 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to fetch user details: "+err.Error())
+// 	}
+// 	return &user, nil
+// }
