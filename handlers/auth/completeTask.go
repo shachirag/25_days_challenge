@@ -19,7 +19,7 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
 
 	deviceID, err := utils.ExtractDeviceIDFromContext(ctx)
 	if err != nil {
-		fmt.Println("Error extracting device ID: %v", err) // Debugging log for device ID extraction error
+		fmt.Println("Error extracting device ID: %v", err) 
 		return nil, err
 	}
 
