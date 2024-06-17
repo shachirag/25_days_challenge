@@ -6,7 +6,6 @@ import (
 	"challenge/graph/model"
 	"challenge/utils"
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,14 +15,6 @@ import (
 )
 
 func CompleteTask(ctx context.Context, db *database.DB, userID string, input model.ChangeStatusRequestInput) (*model.Challenge, error) {
-
-	deviceID, err := utils.ExtractDeviceIDFromContext(ctx)
-	if err != nil {
-		fmt.Println("Error extracting device ID: %v", err) 
-		return nil, err
-	}
-
-	fmt.Println("User ID: %s, Device ID: %s", userID, deviceID)
 
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
@@ -37,10 +28,6 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
 	err = db.GetCollection("user").FindOne(ctx, userFilter).Decode(&user)
 	if err != nil {
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "failed to fetch user")
-	}
-
-	if user.ActiveDeviceId != deviceID {
-		return nil, fiber.NewError(fiber.StatusUnauthorized, "User is already logged in from another device")
 	}
 
 	var task entity.TasksEntity
