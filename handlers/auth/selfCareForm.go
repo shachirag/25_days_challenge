@@ -4,6 +4,7 @@ import (
 	"challenge/database"
 	"challenge/entity"
 	"challenge/graph/model"
+	"challenge/utils"
 	"context"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,15 +15,24 @@ import (
 
 func SelfCareForm(ctx context.Context, db *database.DB, deviceId string, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error) {
 
+	user, err := utils.ExtractUserFromContext(ctx, db)
+	if err != nil {
+		return nil, err
+	}
+
+	deviceID, err := utils.ExtractDeviceIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if user.ActiveDeviceId != deviceID {
+		return nil, fiber.NewError(fiber.StatusUnauthorized, "Action not allowed. You are logged in from another device.")
+	}
+
 	var (
 		taskColl = db.GetCollection("task")
 		task     entity.TasksEntity
 	)
-
-	// deviceID, err := extractDeviceIDFromToken(ctx)
-	// if err != nil {
-	// 	return nil, fiber.NewError(fiber.StatusUnauthorized, "Invalid token")
-	// }
 
 	objID, err := primitive.ObjectIDFromHex(input.ChallengeID)
 	if err != nil {
@@ -39,15 +49,6 @@ func SelfCareForm(ctx context.Context, db *database.DB, deviceId string, input m
 		}
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Internal server error while fetching the task: "+err.Error())
 	}
-
-	// user, err := getUserByToken(ctx, db)
-	// if err != nil {
-	// 	return nil, fiber.NewError(fiber.StatusUnauthorized, "Invalid token")
-	// }
-
-	// if user.ActiveDeviceId != deviceID {
-	// 	return nil, fiber.NewError(fiber.StatusUnauthorized, "User is already logged in from another device")
-	// }
 
 	update := bson.M{
 		"$set": bson.M{

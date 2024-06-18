@@ -14,7 +14,6 @@ type ContextKey string
 
 const UserClaimsKey ContextKey = "userClaims"
 
-// ValidateJWT middleware to validate JWT and store claims in request context
 func ValidateJWT(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
@@ -46,7 +45,6 @@ func ValidateJWT(next http.Handler) http.Handler {
 			return
 		}
 
-		// Store the claims in the request context
 		ctx := context.WithValue(r.Context(), UserClaimsKey, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

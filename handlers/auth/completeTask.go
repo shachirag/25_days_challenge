@@ -30,6 +30,15 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
 		return nil, fiber.NewError(fiber.StatusInternalServerError, "failed to fetch user")
 	}
 
+	deviceID, err := utils.ExtractDeviceIDFromContext(ctx)
+	if err != nil {
+		return nil, fiber.NewError(fiber.StatusUnauthorized, "Failed to extract device ID from context")
+	}
+
+	if user.ActiveDeviceId != deviceID {
+		return nil, fiber.NewError(fiber.StatusUnauthorized, "Action not allowed. You are logged in from another device.")
+	}
+
 	var task entity.TasksEntity
 	taskColl := db.GetCollection("task")
 	date, err := utils.ParseDate(input.Date)

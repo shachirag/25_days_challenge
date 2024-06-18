@@ -148,11 +148,6 @@ func createTask(ctx context.Context, db *database.DB, userId primitive.ObjectID,
 		return nil, fiber.NewError(fiber.StatusBadRequest, "ChallengeStartDate is mandatory")
 	}
 
-	completedTasks := []string{}
-	if len(task.CompletedTasks) > 0 {
-		completedTasks = task.CompletedTasks
-	}
-
 	id := primitive.NewObjectID()
 	taskData := entity.TasksEntity{
 		Id:                id,
@@ -162,7 +157,7 @@ func createTask(ctx context.Context, db *database.DB, userId primitive.ObjectID,
 		Status:            "ongoing",
 		ChalengeStartDate: challengeStartDateParsed,
 		Date:              date,
-		CompletedTasks:    completedTasks,
+		CompletedTasks:    []string{}, 
 		CreatedAt:         time.Now().UTC(),
 		UpdatedAt:         time.Now().UTC(),
 	}
