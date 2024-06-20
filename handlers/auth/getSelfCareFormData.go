@@ -7,7 +7,7 @@ import (
 	"challenge/utils"
 	"context"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,8 +25,8 @@ func GetSelfCareFormData(ctx context.Context, db *database.DB, userId string, in
 		return nil, err
 	}
 
-	if user.ActiveDeviceId != deviceID {
-		return nil, fiber.NewError(fiber.StatusUnauthorized, "Action not allowed. You are logged in from another device.")
+	if user.SessionId != deviceID {
+		return nil, gqlerror.Errorf("Action not allowed. You are logged in from another device.")
 	}
 
 	var task entity.TasksEntity
@@ -35,7 +35,7 @@ func GetSelfCareFormData(ctx context.Context, db *database.DB, userId string, in
 
 	userObjID, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "Invalid challenge ID")
+		return nil, gqlerror.Errorf("Invalid challenge ID")
 	}
 
 	filter := bson.M{
@@ -47,9 +47,9 @@ func GetSelfCareFormData(ctx context.Context, db *database.DB, userId string, in
 	err = taskColl.FindOne(ctx, filter).Decode(&task)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fiber.NewError(fiber.StatusInternalServerError, "task not found")
+			return nil, gqlerror.Errorf("task not found")
 		}
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "failed to fetch task")
+		return nil, gqlerror.Errorf("failed to fetch task")
 	}
 
 	var OwnStatement string

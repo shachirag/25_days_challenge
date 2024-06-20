@@ -406,8 +406,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSelfCareFormRequestInput,
 		ec.unmarshalInputSignUpRequestInput,
 		ec.unmarshalInputSocialLoginRequestInput,
-		ec.unmarshalInputTaskInput,
-		ec.unmarshalInputUserReq,
 		ec.unmarshalInputVerifyOtpForResetPasswordRequestInput,
 		ec.unmarshalInputVerifyOtpRequestInput,
 	)
@@ -536,26 +534,11 @@ type LoginResponse {
 }
 
 input VerifyOtpRequestInput {
-  user: UserReq!
-  challengeStartDate: String!
-  task: TaskInput!
-}
-
-input TaskInput {
-  level: Int!
-  day: Int!
-  date: String!
-  completedTasks: [String!]!
-}
-
-input UserReq {
   otp: String!
   username: String!
   email: String!
   password: String!
-  googleId: String!
-  appleId: String!
-  deviceId: String!
+  sessionId: String!
 }
 
 type Challenge {
@@ -605,6 +588,7 @@ input SocialLoginRequestInput {
   type: String!
   email: String
   name: String!
+  sessionId: String!
 }
 
 input ChangeStatusRequestInput {
@@ -4605,7 +4589,7 @@ func (ec *executionContext) unmarshalInputSocialLoginRequestInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"socialId", "type", "email", "name"}
+	fieldsInOrder := [...]string{"socialId", "type", "email", "name", "sessionId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4640,123 +4624,13 @@ func (ec *executionContext) unmarshalInputSocialLoginRequestInput(ctx context.Co
 				return it, err
 			}
 			it.Name = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputTaskInput(ctx context.Context, obj interface{}) (model.TaskInput, error) {
-	var it model.TaskInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"level", "day", "date", "completedTasks"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "level":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("level"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Level = data
-		case "day":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("day"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Day = data
-		case "date":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("date"))
+		case "sessionId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sessionId"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Date = data
-		case "completedTasks":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedTasks"))
-			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CompletedTasks = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputUserReq(ctx context.Context, obj interface{}) (model.UserReq, error) {
-	var it model.UserReq
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"otp", "username", "email", "password", "googleId", "appleId", "deviceId"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "otp":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("otp"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Otp = data
-		case "username":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Username = data
-		case "email":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Email = data
-		case "password":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Password = data
-		case "googleId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("googleId"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.GoogleID = data
-		case "appleId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("appleId"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.AppleID = data
-		case "deviceId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deviceId"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.DeviceID = data
+			it.SessionID = data
 		}
 	}
 
@@ -4804,34 +4678,48 @@ func (ec *executionContext) unmarshalInputVerifyOtpRequestInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"user", "challengeStartDate", "task"}
+	fieldsInOrder := [...]string{"otp", "username", "email", "password", "sessionId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "user":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user"))
-			data, err := ec.unmarshalNUserReq2ᚖchallengeᚋgraphᚋmodelᚐUserReq(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.User = data
-		case "challengeStartDate":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("challengeStartDate"))
+		case "otp":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("otp"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.ChallengeStartDate = data
-		case "task":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task"))
-			data, err := ec.unmarshalNTaskInput2ᚖchallengeᚋgraphᚋmodelᚐTaskInput(ctx, v)
+			it.Otp = data
+		case "username":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Task = data
+			it.Username = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "password":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Password = data
+		case "sessionId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sessionId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SessionID = data
 		}
 	}
 
@@ -5805,11 +5693,6 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	return ret
 }
 
-func (ec *executionContext) unmarshalNTaskInput2ᚖchallengeᚋgraphᚋmodelᚐTaskInput(ctx context.Context, v interface{}) (*model.TaskInput, error) {
-	res, err := ec.unmarshalInputTaskInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) marshalNUser2challengeᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
@@ -5822,11 +5705,6 @@ func (ec *executionContext) marshalNUser2ᚖchallengeᚋgraphᚋmodelᚐUser(ctx
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNUserReq2ᚖchallengeᚋgraphᚋmodelᚐUserReq(ctx context.Context, v interface{}) (*model.UserReq, error) {
-	res, err := ec.unmarshalInputUserReq(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNVerifyOtpForResetPasswordRequestInput2challengeᚋgraphᚋmodelᚐVerifyOtpForResetPasswordRequestInput(ctx context.Context, v interface{}) (model.VerifyOtpForResetPasswordRequestInput, error) {

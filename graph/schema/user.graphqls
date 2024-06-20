@@ -27,26 +27,11 @@ type LoginResponse {
 }
 
 input VerifyOtpRequestInput {
-  user: UserReq!
-  challengeStartDate: String!
-  task: TaskInput!
-}
-
-input TaskInput {
-  level: Int!
-  day: Int!
-  date: String!
-  completedTasks: [String!]!
-}
-
-input UserReq {
   otp: String!
   username: String!
   email: String!
   password: String!
-  googleId: String!
-  appleId: String!
-  deviceId: String!
+  sessionId: String!
 }
 
 type Challenge {
@@ -96,6 +81,7 @@ input SocialLoginRequestInput {
   type: String!
   email: String
   name: String!
+  sessionId: String!
 }
 
 input ChangeStatusRequestInput {

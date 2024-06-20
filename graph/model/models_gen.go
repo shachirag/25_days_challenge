@@ -73,17 +73,11 @@ type SignUpRequestInput struct {
 }
 
 type SocialLoginRequestInput struct {
-	SocialID string  `json:"socialId"`
-	Type     string  `json:"type"`
-	Email    *string `json:"email,omitempty"`
-	Name     string  `json:"name"`
-}
-
-type TaskInput struct {
-	Level          int      `json:"level"`
-	Day            int      `json:"day"`
-	Date           string   `json:"date"`
-	CompletedTasks []string `json:"completedTasks"`
+	SocialID  string  `json:"socialId"`
+	Type      string  `json:"type"`
+	Email     *string `json:"email,omitempty"`
+	Name      string  `json:"name"`
+	SessionID string  `json:"sessionId"`
 }
 
 type User struct {
@@ -93,23 +87,15 @@ type User struct {
 	Token    string `json:"token"`
 }
 
-type UserReq struct {
-	Otp      string `json:"otp"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	GoogleID string `json:"googleId"`
-	AppleID  string `json:"appleId"`
-	DeviceID string `json:"deviceId"`
-}
-
 type VerifyOtpForResetPasswordRequestInput struct {
 	Email string `json:"email"`
 	Otp   string `json:"otp"`
 }
 
 type VerifyOtpRequestInput struct {
-	User               *UserReq   `json:"user"`
-	ChallengeStartDate string     `json:"challengeStartDate"`
-	Task               *TaskInput `json:"task"`
+	Otp       string `json:"otp"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	SessionID string `json:"sessionId"`
 }

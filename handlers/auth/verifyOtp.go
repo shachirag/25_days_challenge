@@ -7,7 +7,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -21,7 +21,7 @@ func VerifyOtpForResetPassword(ctx context.Context, db *database.DB, input model
 	)
 
 	if input.Otp == "" {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "OTP is required")
+		return nil, gqlerror.Errorf("OTP is required")
 	}
 
 	smallEmail := strings.ToLower(input.Email)
@@ -29,21 +29,21 @@ func VerifyOtpForResetPassword(ctx context.Context, db *database.DB, input model
 	err := db.GetCollection("user").FindOne(ctx, bson.M{"email": smallEmail}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fiber.NewError(fiber.StatusBadRequest, "user not found")
+			return nil, gqlerror.Errorf("user not found")
 		}
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Internal server error while fetching the user.")
+		return nil, gqlerror.Errorf("Internal server error while fetching the user.")
 	}
 
 	err = otpColl.FindOne(ctx, bson.M{"email": smallEmail}, options.FindOne().SetSort(bson.M{"createdAt": -1})).Decode(&otpData)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fiber.NewError(fiber.StatusNotFound, "Invalid OTP")
+			return nil, gqlerror.Errorf("Invalid OTP")
 		}
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Internal server error while fetching OTP: "+err.Error())
+		return nil, gqlerror.Errorf("Internal server error while fetching OTP: " + err.Error())
 	}
 
 	if input.Otp != otpData.Otp {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "OTP does not match")
+		return nil, gqlerror.Errorf("OTP does not match")
 	}
 
 	return &model.User{

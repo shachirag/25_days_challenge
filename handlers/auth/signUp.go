@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/ses"
-	"github.com/gofiber/fiber/v2"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -25,11 +25,11 @@ func SignUpUser(ctx context.Context, db *database.DB, sesClient *ses.Client, use
 
 	exists, err := customerColl.CountDocuments(ctx, filter)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Database error: "+err.Error())
+		return nil, gqlerror.Errorf("Database error: " + err.Error())
 	}
 
 	if exists > 0 {
-		return nil, fiber.NewError(fiber.StatusConflict, "Email is already in use.")
+		return nil, gqlerror.Errorf("Email is already in use.")
 	}
 
 	id := primitive.NewObjectID()
@@ -43,12 +43,12 @@ func SignUpUser(ctx context.Context, db *database.DB, sesClient *ses.Client, use
 
 	_, err = otpColl.InsertOne(ctx, otpData)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error storing OTP: "+err.Error())
+		return nil, gqlerror.Errorf("Error storing OTP: " + err.Error())
 	}
 
 	_, err = utils.SendEmail(sesClient, userInfo.Email, otp)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error sending OTP to email: "+err.Error())
+		return nil, gqlerror.Errorf("Error sending OTP to email: " + err.Error())
 	}
 
 	return &model.User{}, nil

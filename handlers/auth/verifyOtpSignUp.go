@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	jtoken "github.com/golang-jwt/jwt/v4"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,47 +18,42 @@ import (
 )
 
 func VerifyOtp(ctx context.Context, db *database.DB, data model.VerifyOtpRequestInput) (*model.LoginResponse, error) {
-	otpData, err := fetchLatestOtp(ctx, db, data.User.Email)
+	otpData, err := fetchLatestOtp(ctx, db, data.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	if data.User.Otp != otpData.Otp {
-		return nil, fiber.NewError(fiber.StatusUnauthorized, "Invalid OTP.")
+	if data.Otp != otpData.Otp {
+		return nil, gqlerror.Errorf("Invalid OTP.")
 	}
 
-	userData, err := findOrCreateUser(ctx, db, data.User)
+	userData, err := findOrCreateUser(ctx, db, data)
 	if err != nil {
 		return nil, err
 	}
 
 	if userData == nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error Occured")
+		return nil, gqlerror.Errorf("Error Occured")
 	}
 
 	token, err := GenerateJWTToken(*userData)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error generating JWT token.")
+		return nil, gqlerror.Errorf("Error generating JWT token.")
 	}
 
-	taskId, err := createTask(ctx, db, userData.Id, data.Task, data.ChallengeStartDate)
+	taskId, err := createTask(ctx, db, userData.Id)
 	if err != nil {
 		return nil, err
-	}
-
-	completedTasks := []string{}
-	if len(data.Task.CompletedTasks) > 0 {
-		completedTasks = data.Task.CompletedTasks
 	}
 
 	challenges := []*model.Challenge{
 		{
 			ID:             taskId.Hex(),
 			UserID:         userData.Id.Hex(),
-			Level:          data.Task.Level,
-			Day:            data.Task.Day,
-			Date:           data.Task.Date,
-			CompletedTasks: completedTasks,
+			Level:          1,
+			Day:            1,
+			Date:           time.Now().UTC().Format(time.DateOnly),
+			CompletedTasks: []string{},
 			Status:         "ongoing",
 		},
 	}
@@ -70,7 +65,7 @@ func VerifyOtp(ctx context.Context, db *database.DB, data model.VerifyOtpRequest
 			Email:    userData.Email,
 			Token:    token,
 		},
-		ChallengeStartDate: data.ChallengeStartDate,
+		ChallengeStartDate: time.Now().UTC().Format(time.DateOnly),
 		Challenges:         challenges,
 	}, nil
 }
@@ -81,14 +76,14 @@ func fetchLatestOtp(ctx context.Context, db *database.DB, email string) (*entity
 	err := otpColl.FindOne(ctx, bson.M{"email": email}, options.FindOne().SetSort(bson.M{"createdAt": -1})).Decode(&otpData)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fiber.NewError(fiber.StatusNotFound, "OTP not found.")
+			return nil, gqlerror.Errorf("OTP not found.")
 		}
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error fetching OTP data.")
+		return nil, gqlerror.Errorf("Error fetching OTP data.")
 	}
 	return &otpData, nil
 }
 
-func findOrCreateUser(ctx context.Context, db *database.DB, userReq *model.UserReq) (*entity.CustomerEntity, error) {
+func findOrCreateUser(ctx context.Context, db *database.DB, userReq model.VerifyOtpRequestInput) (*entity.CustomerEntity, error) {
 	customerColl := db.GetCollection("user")
 	var userData entity.CustomerEntity
 	err := customerColl.FindOne(ctx, bson.M{"email": userReq.Email}).Decode(&userData)
@@ -96,92 +91,67 @@ func findOrCreateUser(ctx context.Context, db *database.DB, userReq *model.UserR
 		if err == mongo.ErrNoDocuments {
 			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userReq.Password), bcrypt.DefaultCost)
 			if err != nil {
-				return nil, fiber.NewError(fiber.StatusInternalServerError, "Error hashing password.")
+				return nil, gqlerror.Errorf("Error hashing password.")
 			}
 
 			userId := primitive.NewObjectID()
 			userData = entity.CustomerEntity{
-				Id:       userId,
-				UserName: userReq.Username,
-				Email:    userReq.Email,
-				Password: string(hashedPassword),
-				SocialDetails: entity.SocialDetails{
-					AppleId:  userReq.AppleID,
-					GoogleId: userReq.GoogleID,
-				},
-				ActiveDeviceId: userReq.DeviceID,
-				CreatedAt:      time.Now().UTC(),
-				UpdatedAt:      time.Now().UTC(),
+				Id:        userId,
+				UserName:  userReq.Username,
+				Email:     userReq.Email,
+				Password:  string(hashedPassword),
+				SessionId: userReq.SessionID,
+				CreatedAt: time.Now().UTC(),
+				UpdatedAt: time.Now().UTC(),
 			}
 
 			_, err = customerColl.InsertOne(ctx, userData)
 			if err != nil {
-				return nil, fiber.NewError(fiber.StatusInternalServerError, "Error inserting user data.")
+				return nil, gqlerror.Errorf("Error inserting user data.")
 			}
 		} else {
-			return nil, fiber.NewError(fiber.StatusInternalServerError, "Error fetching user data.")
+			return nil, gqlerror.Errorf("Error fetching user data.")
 		}
 	}
 	return &userData, nil
 }
 
-func createTask(ctx context.Context, db *database.DB, userId primitive.ObjectID, task *model.TaskInput, challengeStartDate string) (*primitive.ObjectID, error) {
-	var date time.Time
-	if task.Date != "" {
-		var err error
-		date, err = time.Parse(time.DateOnly, task.Date)
-		if err != nil {
-			return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to parse date")
-		}
-	} else {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "Date is mandatory")
-	}
+func createTask(ctx context.Context, db *database.DB, userId primitive.ObjectID) (*primitive.ObjectID, error) {
 
-	var challengeStartDateParsed time.Time
-	if challengeStartDate != "" {
-		var err error
-		challengeStartDateParsed, err = time.Parse(time.DateOnly, challengeStartDate)
-		if err != nil {
-			return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to parse challengeStartDate")
-		}
-	} else {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "ChallengeStartDate is mandatory")
-	}
-
-	id := primitive.NewObjectID()
+	taskId := primitive.NewObjectID()
 	taskData := entity.TasksEntity{
-		Id:                id,
+		Id:                taskId,
 		UserId:            userId,
-		Level:             task.Level,
-		Day:               task.Day,
+		Level:             1,
+		Day:               1,
 		Status:            "ongoing",
-		ChalengeStartDate: challengeStartDateParsed,
-		Date:              date,
-		CompletedTasks:    []string{}, 
+		ChalengeStartDate: time.Now().UTC(),
+		Date:              time.Now().UTC(),
+		CompletedTasks:    []string{},
 		CreatedAt:         time.Now().UTC(),
 		UpdatedAt:         time.Now().UTC(),
 	}
 
 	_, err := db.GetCollection("task").InsertOne(ctx, taskData)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error inserting task data.")
+		return nil, gqlerror.Errorf("Error inserting task data.")
 	}
 
-	return &id, nil
+	return &taskId, nil
 }
 
 func GenerateJWTToken(user entity.CustomerEntity) (string, error) {
 	secret := os.Getenv("JWT_SECRET_KEY")
 	if secret == "" {
-		return "", fiber.NewError(fiber.StatusInternalServerError, "JWT secret key not found.")
+		return "", gqlerror.Errorf("JWT secret key not found.")
 	}
 
 	claims := jtoken.MapClaims{
-		"Id":       user.Id.Hex(),
-		"email":    user.Email,
-		"role":     "customer",
-		"deviceId": user.ActiveDeviceId,
-		"exp":      time.Now().Add(6 * 30 * 24 * time.Hour).Unix(),
+		"Id":        user.Id.Hex(),
+		"email":     user.Email,
+		"role":      "customer",
+		"sessionId": user.SessionId,
+		"exp":       time.Now().Add(6 * 30 * 24 * time.Hour).Unix(),
 	}
 
 	token := jtoken.NewWithClaims(jtoken.SigningMethodHS256, claims)

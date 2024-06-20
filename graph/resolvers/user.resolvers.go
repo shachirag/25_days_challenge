@@ -9,9 +9,6 @@ import (
 	"challenge/handlers/auth"
 	"context"
 	"fmt"
-
-	"github.com/gofiber/fiber/v2"
-		jtoken "github.com/golang-jwt/jwt/v4"
 )
 
 // Login is the resolver for the login field.
@@ -79,7 +76,6 @@ func (r *mutationResolver) ResetPassword(ctx context.Context, input model.ResetP
 
 // CompleteTask is the resolver for the completeTask field.
 func (r *mutationResolver) CompleteTask(ctx context.Context, userID string, input model.ChangeStatusRequestInput) (*model.Challenge, error) {
-	
 	changeStatusPayload, err := auth.CompleteTask(ctx, r.DB, userID, input)
 	if err != nil {
 		return nil, err
@@ -89,12 +85,7 @@ func (r *mutationResolver) CompleteTask(ctx context.Context, userID string, inpu
 
 // SelfCareForm is the resolver for the selfCareForm field.
 func (r *mutationResolver) SelfCareForm(ctx context.Context, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error) {
-	deviceID, err := extractDeviceIDFromToken(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	selfCarePayload, err := auth.SelfCareForm(ctx, r.DB, deviceID, input)
+	selfCarePayload, err := auth.SelfCareForm(ctx, r.DB, input)
 	if err != nil {
 		return nil, err
 	}
@@ -123,16 +114,3 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-func extractDeviceIDFromToken(ctx context.Context) (string, error) {
-	token := ctx.Value("user").(*jtoken.Token)
-	claims, ok := token.Claims.(jtoken.MapClaims)
-	if !ok {
-		return "", fiber.NewError(fiber.StatusInternalServerError, "Failed to parse token claims")
-	}
-	deviceID, ok := claims["deviceId"].(string)
-	if !ok {
-		return "", fiber.NewError(fiber.StatusInternalServerError, "DeviceId not found in token claims")
-	}
-	return deviceID, nil
-}

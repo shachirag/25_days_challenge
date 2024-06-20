@@ -8,7 +8,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,7 +18,7 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
 
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "Invalid user ID")
+		return nil, gqlerror.Errorf("Invalid user ID")
 	}
 
 	userFilter := bson.M{
@@ -27,23 +27,23 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
 	var user entity.CustomerEntity
 	err = db.GetCollection("user").FindOne(ctx, userFilter).Decode(&user)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "failed to fetch user")
+		return nil, gqlerror.Errorf("failed to fetch user")
 	}
 
 	deviceID, err := utils.ExtractDeviceIDFromContext(ctx)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusUnauthorized, "Failed to extract device ID from context")
+		return nil, gqlerror.Errorf("Failed to extract device ID from context")
 	}
 
-	if user.ActiveDeviceId != deviceID {
-		return nil, fiber.NewError(fiber.StatusUnauthorized, "Action not allowed. You are logged in from another device.")
+	if user.SessionId != deviceID {
+		return nil, gqlerror.Errorf("Action not allowed. You are logged in from another device.")
 	}
 
 	var task entity.TasksEntity
 	taskColl := db.GetCollection("task")
 	date, err := utils.ParseDate(input.Date)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "Invalid format")
+		return nil, gqlerror.Errorf("Invalid format")
 	}
 
 	filter := bson.M{
@@ -69,7 +69,7 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
 
 			_, err := taskColl.InsertOne(ctx, newTask)
 			if err != nil {
-				return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to create new task document: "+err.Error())
+				return nil, gqlerror.Errorf("Failed to create new task document: " + err.Error())
 			}
 
 			return &model.Challenge{
@@ -82,7 +82,7 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
 				CompletedTasks: newTask.CompletedTasks,
 			}, nil
 		}
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error occurred while fetching task: "+err.Error())
+		return nil, gqlerror.Errorf("Error occurred while fetching task: " + err.Error())
 	}
 
 	update := bson.M{
@@ -102,11 +102,11 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
 
 	updateRes, err := taskColl.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to update task data in MongoDB: "+err.Error())
+		return nil, gqlerror.Errorf("Failed to update task data in MongoDB: " + err.Error())
 	}
 
 	if updateRes.MatchedCount == 0 {
-		return nil, fiber.NewError(fiber.StatusNotFound, "Task not found")
+		return nil, gqlerror.Errorf("Task not found")
 	}
 
 	task.Status = update["$set"].(bson.M)["status"].(string)

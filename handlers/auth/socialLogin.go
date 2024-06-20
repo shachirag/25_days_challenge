@@ -6,12 +6,10 @@ import (
 	"challenge/graph/model"
 	"challenge/utils"
 	"context"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,17 +23,17 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 
 	err := utils.ValidateSocialId(&input)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "Invalid social ID: "+err.Error())
+		return nil, gqlerror.Errorf("Invalid social ID: " + err.Error())
 	}
 
 	filter := bson.M{}
 	switch input.Type {
 	case "apple":
-		filter = bson.M{"appleId": input.SocialID}
+		filter = bson.M{"socialDetails.appleId": input.SocialID}
 	case "google":
-		filter = bson.M{"googleId": input.SocialID}
+		filter = bson.M{"socialDetails.googleId": input.SocialID}
 	default:
-		return nil, fiber.NewError(fiber.StatusBadRequest, "Unsupported social login type")
+		return nil, gqlerror.Errorf("Unsupported social login type")
 	}
 
 	var smallEmail string
@@ -45,26 +43,65 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 
 	err = userColl.FindOne(ctx, filter).Decode(&customer)
 	if err != nil {
-		if input.Email != nil {
+		if err == mongo.ErrNoDocuments && input.Email != nil {
 			filter = bson.M{"email": smallEmail}
 			err = userColl.FindOne(ctx, filter).Decode(&customer)
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
 					customer, err = socialSignup(ctx, db, &input)
 					if err != nil {
-						return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to sign up: "+err.Error())
+						return nil, gqlerror.Errorf("Failed to sign up: " + err.Error())
 					}
+
+					if customer == nil {
+						return nil, gqlerror.Errorf("Internal server error")
+					}
+
+					taskID, err := createInitialTask(ctx, db, customer.Id)
+					if err != nil {
+						return nil, gqlerror.Errorf("Failed to create initial task: " + err.Error())
+					}
+
+					challenges := []*model.Challenge{
+						{
+							ID:             taskID.Hex(),
+							UserID:         customer.Id.Hex(),
+							Level:          1,
+							Day:            1,
+							Date:           time.Now().Format(time.DateOnly),
+							CompletedTasks: []string{},
+							Status:         "ongoing",
+						},
+					}
+
+					token, err := GenerateJWTToken(*customer)
+					if err != nil {
+						return nil, gqlerror.Errorf("Failed to generate JWT token: " + err.Error())
+					}
+
+					return &model.LoginResponse{
+						User: &model.User{
+							ID:       customer.Id.Hex(),
+							UserName: customer.UserName,
+							Email:    customer.Email,
+							Token:    token,
+						},
+						ChallengeStartDate: time.Now().UTC().Format(time.DateOnly),
+						Challenges:         challenges,
+					}, nil
 				} else {
-					return nil, fiber.NewError(fiber.StatusInternalServerError, "Error finding user by email: "+err.Error())
+					return nil, gqlerror.Errorf("Error finding user by email: " + err.Error())
 				}
 			}
 		} else {
-			return nil, fiber.NewError(fiber.StatusNotFound, "User not found with provided social ID and no email to fallback")
+			return nil, gqlerror.Errorf("User not found with provided social ID and no email to fallback")
 		}
 	}
 
+	update := bson.M{"sessionId": input.SessionID}
+
 	if customer != nil {
-		update := bson.M{}
+
 		isUpdate := false
 		if customer.Email == "" && smallEmail != "" {
 			update["email"] = smallEmail
@@ -82,7 +119,7 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 		if isUpdate {
 			_, err = userColl.UpdateOne(ctx, bson.M{"_id": customer.Id}, bson.M{"$set": update})
 			if err != nil {
-				return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to update user details: "+err.Error())
+				return nil, gqlerror.Errorf("Failed to update user details: " + err.Error())
 			}
 		}
 	}
@@ -91,20 +128,20 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 	taskFilter := bson.M{"userId": customer.Id}
 	cursor, err := db.GetCollection("task").Find(ctx, taskFilter)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error occurred while fetching tasks: "+err.Error())
+		return nil, gqlerror.Errorf("Error occurred while fetching tasks: " + err.Error())
 	}
 	defer cursor.Close(ctx)
 
 	for cursor.Next(ctx) {
 		var task entity.TasksEntity
 		if err := cursor.Decode(&task); err != nil {
-			return nil, fiber.NewError(fiber.StatusInternalServerError, "Error decoding task: "+err.Error())
+			return nil, gqlerror.Errorf("Error decoding task: " + err.Error())
 		}
 		tasks = append(tasks, task)
 	}
 
 	if err := cursor.Err(); err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error iterating through tasks: "+err.Error())
+		return nil, gqlerror.Errorf("Error iterating through tasks: " + err.Error())
 	}
 
 	challenges := []*model.Challenge{}
@@ -125,9 +162,9 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 		challenges = append(challenges, challenge)
 	}
 
-	token, err := generateJWTToken(customer, smallEmail)
+	token, err := GenerateJWTToken(*customer)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to generate JWT token: "+err.Error())
+		return nil, gqlerror.Errorf("Failed to generate JWT token: " + err.Error())
 	}
 
 	return &model.LoginResponse{
@@ -153,10 +190,10 @@ func socialSignup(ctx context.Context, db *database.DB, data *model.SocialLoginR
 	filter := bson.M{"email": smallEmail}
 	exists, err := userColl.CountDocuments(ctx, filter)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error checking existing user: "+err.Error())
+		return nil, gqlerror.Errorf("Error checking existing user: " + err.Error())
 	}
 	if exists > 0 {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "User with this email already exists")
+		return nil, gqlerror.Errorf("User with this email already exists")
 	}
 
 	id := primitive.NewObjectID()
@@ -164,6 +201,7 @@ func socialSignup(ctx context.Context, db *database.DB, data *model.SocialLoginR
 		Id:        id,
 		Email:     smallEmail,
 		UserName:  data.Name,
+		SessionId: data.SessionID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 	}
@@ -174,29 +212,38 @@ func socialSignup(ctx context.Context, db *database.DB, data *model.SocialLoginR
 	case "apple":
 		customer.SocialDetails.AppleId = data.SocialID
 	default:
-		return nil, fiber.NewError(fiber.StatusBadRequest, "Unsupported social login type")
+		return nil, gqlerror.Errorf("Unsupported social login type")
 	}
 
 	_, err = userColl.InsertOne(ctx, customer)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to insert new customer: "+err.Error())
+		return nil, gqlerror.Errorf("Failed to insert new customer: " + err.Error())
 	}
 
 	return customer, nil
 }
 
-func generateJWTToken(customer *entity.CustomerEntity, email string) (string, error) {
-	_secret := os.Getenv("JWT_SECRET_KEY")
+func createInitialTask(ctx context.Context, db *database.DB, userId primitive.ObjectID) (*primitive.ObjectID, error) {
+	taskColl := db.GetCollection("task")
 
-	month := (time.Hour * 24) * 30
-	claims := jwt.MapClaims{
-		"Id":       customer.Id.Hex(),
-		"email":    email,
-		"role":     "customer",
-		"deviceId": customer.ActiveDeviceId,
-		"exp":      time.Now().Add(month * 6).Unix(),
+	taskID := primitive.NewObjectID()
+	initialTask := entity.TasksEntity{
+		Id:                taskID,
+		UserId:            userId,
+		Level:             1,
+		Day:               1,
+		Date:              time.Now().UTC(),
+		ChalengeStartDate: time.Now().UTC(),
+		Status:            "ongoing",
+		CompletedTasks:    []string{},
+		CreatedAt:         time.Now().UTC(),
+		UpdatedAt:         time.Now().UTC(),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(_secret))
+	_, err := taskColl.InsertOne(ctx, initialTask)
+	if err != nil {
+		return nil, gqlerror.Errorf("Failed to create initial task: " + err.Error())
+	}
+
+	return &taskID, nil
 }

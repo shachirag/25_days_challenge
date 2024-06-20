@@ -12,7 +12,7 @@ type CustomerEntity struct {
 	Email          string             `json:"email" bson:"email"`
 	Password       string             `json:"password" bson:"password"`
 	SocialDetails  SocialDetails      `json:"socialDetails" bson:"socialDetails"`
-	ActiveDeviceId string             `json:"activeDeviceId" bson:"activeDeviceId"`
+	SessionId string             `json:"sessionId" bson:"sessionId"`
 	CreatedAt      time.Time          `json:"cresatedAt" bson:"createdAt"`
 	UpdatedAt      time.Time          `json:"updatedAt" bson:"updatedAt"`
 }

@@ -7,13 +7,13 @@ import (
 	"challenge/utils"
 	"context"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SelfCareForm(ctx context.Context, db *database.DB, deviceId string, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error) {
+func SelfCareForm(ctx context.Context, db *database.DB,input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error) {
 
 	user, err := utils.ExtractUserFromContext(ctx, db)
 	if err != nil {
@@ -25,8 +25,8 @@ func SelfCareForm(ctx context.Context, db *database.DB, deviceId string, input m
 		return nil, err
 	}
 
-	if user.ActiveDeviceId != deviceID {
-		return nil, fiber.NewError(fiber.StatusUnauthorized, "Action not allowed. You are logged in from another device.")
+	if user.SessionId != deviceID {
+		return nil, gqlerror.Errorf("Action not allowed. You are logged in from another device.")
 	}
 
 	var (
@@ -36,7 +36,7 @@ func SelfCareForm(ctx context.Context, db *database.DB, deviceId string, input m
 
 	objID, err := primitive.ObjectIDFromHex(input.ChallengeID)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "Invalid challenge ID")
+		return nil, gqlerror.Errorf("Invalid challenge ID")
 	}
 
 	filter := bson.M{
@@ -45,9 +45,9 @@ func SelfCareForm(ctx context.Context, db *database.DB, deviceId string, input m
 	err = taskColl.FindOne(ctx, filter).Decode(&task)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fiber.NewError(fiber.StatusNotFound, "No task found")
+			return nil, gqlerror.Errorf("No task found")
 		}
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Internal server error while fetching the task: "+err.Error())
+		return nil, gqlerror.Errorf("Internal server error while fetching the task: " + err.Error())
 	}
 
 	update := bson.M{
@@ -61,7 +61,7 @@ func SelfCareForm(ctx context.Context, db *database.DB, deviceId string, input m
 
 	_, err = taskColl.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to update the form")
+		return nil, gqlerror.Errorf("Failed to update the form")
 	}
 
 	return &model.SelfCareReponse{
@@ -72,28 +72,3 @@ func SelfCareForm(ctx context.Context, db *database.DB, deviceId string, input m
 		ThingsTodayThatBringYouJoyAndFlow:    input.ThingsTodayThatBringYouJoyAndFlow,
 	}, nil
 }
-
-// func getUserByToken(ctx context.Context, db *database.DB) (*entity.CustomerEntity, error) {
-// 	token := ctx.Value("user").(*jtoken.Token)
-// 	claims, ok := token.Claims.(jtoken.MapClaims)
-// 	if !ok {
-// 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to parse token claims")
-// 	}
-// 	userIDHex, ok := claims["Id"].(string)
-// 	if !ok {
-// 		return nil, fiber.NewError(fiber.StatusInternalServerError, "UserId not found in token claims")
-// 	}
-
-// 	userID, err := primitive.ObjectIDFromHex(userIDHex)
-// 	if err != nil {
-// 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Invalid user ID in token claims")
-// 	}
-
-// 	customerColl := db.GetCollection("user")
-// 	var user entity.CustomerEntity
-// 	err = customerColl.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
-// 	if err != nil {
-// 		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to fetch user details: "+err.Error())
-// 	}
-// 	return &user, nil
-// }

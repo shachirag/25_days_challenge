@@ -51,9 +51,9 @@ func ExtractDeviceIDFromContext(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	deviceID, ok := claims["deviceId"].(string)
+	deviceID, ok := claims["sessionId"].(string)
 	if !ok {
-		return "", fiber.NewError(fiber.StatusInternalServerError, "DeviceId not found in token claims")
+		return "", fiber.NewError(fiber.StatusInternalServerError, "SessionId not found in token claims")
 	}
 	return deviceID, nil
 }
