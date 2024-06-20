@@ -561,7 +561,7 @@ type User {
 input LoginRequestInput {
   email: String!
   password: String!
-  deviceId: String!
+  sessionId: String!
 }
 
 input SignUpRequestInput {
@@ -4425,7 +4425,7 @@ func (ec *executionContext) unmarshalInputLoginRequestInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"email", "password", "deviceId"}
+	fieldsInOrder := [...]string{"email", "password", "sessionId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4446,13 +4446,13 @@ func (ec *executionContext) unmarshalInputLoginRequestInput(ctx context.Context,
 				return it, err
 			}
 			it.Password = data
-		case "deviceId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deviceId"))
+		case "sessionId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sessionId"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.DeviceID = data
+			it.SessionID = data
 		}
 	}
 

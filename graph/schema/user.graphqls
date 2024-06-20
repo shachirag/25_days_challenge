@@ -54,7 +54,7 @@ type User {
 input LoginRequestInput {
   email: String!
   password: String!
-  deviceId: String!
+  sessionId: String!
 }
 
 input SignUpRequestInput {

@@ -30,10 +30,10 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 		return nil, gqlerror.Errorf("Error occurred while fetching user: " + err.Error())
 	}
 
-	if customer.SessionId != "" && customer.SessionId != input.DeviceID {
+	if customer.SessionId != "" && customer.SessionId != input.SessionID {
 		update := bson.M{
 			"$set": bson.M{
-				"sessionId": input.DeviceID,
+				"sessionId": input.SessionID,
 			},
 		}
 
@@ -93,7 +93,7 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 
 	update := bson.M{
 		"$set": bson.M{
-			"sessionId": input.DeviceID,
+			"sessionId": input.SessionID,
 		},
 	}
 

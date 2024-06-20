@@ -29,9 +29,9 @@ type GetSelfCareFormRequestInput struct {
 }
 
 type LoginRequestInput struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	DeviceID string `json:"deviceId"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	SessionID string `json:"sessionId"`
 }
 
 type LoginResponse struct {
