@@ -4,7 +4,6 @@ import (
 	"challenge/database"
 	"challenge/entity"
 	"challenge/graph/model"
-	"challenge/utils"
 	"context"
 	"strings"
 	"time"
@@ -35,11 +34,11 @@ func ForgotPassword(ctx context.Context, db *database.DB, sesClient *ses.Client,
 		return nil, gqlerror.Errorf("Internal server error while fetching the user.")
 	}
 
-	otp := utils.Generate6DigitOtp()
+	// otp := utils.Generate6DigitOtp()
 
 	otpData := entity.OtpEntity{
 		Id:        primitive.NewObjectID(),
-		Otp:       otp,
+		Otp:       "111111",
 		Email:     smallEmail,
 		CreatedAt: time.Now().UTC(),
 	}
@@ -49,10 +48,10 @@ func ForgotPassword(ctx context.Context, db *database.DB, sesClient *ses.Client,
 		return nil, gqlerror.Errorf("Failed to store OTP in the database")
 	}
 
-	_, err = utils.SendEmail(sesClient, user.UserName, otp)
-	if err != nil {
-		return nil, gqlerror.Errorf("Internal server error while sending the email")
-	}
+	// _, err = utils.SendEmail(sesClient, user.UserName, otp)
+	// if err != nil {
+	// 	return nil, gqlerror.Errorf("Internal server error while sending the email")
+	// }
 
 	return &model.User{
 		ID:       user.Id.Hex(),
