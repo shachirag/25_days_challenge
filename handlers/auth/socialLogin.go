@@ -6,9 +6,11 @@ import (
 	"challenge/graph/model"
 	"challenge/utils"
 	"context"
+	"os"
 	"strings"
 	"time"
 
+	jtoken "github.com/golang-jwt/jwt/v4"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -74,7 +76,21 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 						},
 					}
 
-					token, err := GenerateJWTToken(*customer)
+					secret := os.Getenv("JWT_SECRET_KEY")
+					if secret == "" {
+						return nil, gqlerror.Errorf("JWT secret key not found.")
+					}
+
+					claims := jtoken.MapClaims{
+						"Id":        customer.Id.Hex(),
+						"email":     customer.Email,
+						"role":      "customer",
+						"sessionId": input.SessionID,
+						"exp":       time.Now().Add(6 * 30 * 24 * time.Hour).Unix(),
+					}
+
+					token := jtoken.NewWithClaims(jtoken.SigningMethodHS256, claims)
+					signedToken, err := token.SignedString([]byte(secret))
 					if err != nil {
 						return nil, gqlerror.Errorf("Failed to generate JWT token: " + err.Error())
 					}
@@ -84,7 +100,7 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 							ID:       customer.Id.Hex(),
 							UserName: customer.UserName,
 							Email:    customer.Email,
-							Token:    token,
+							Token:    signedToken,
 						},
 						ChallengeStartDate: time.Now().UTC().Format(time.DateOnly),
 						Challenges:         challenges,

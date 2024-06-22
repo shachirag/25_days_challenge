@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SelfCareForm(ctx context.Context, db *database.DB,input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error) {
+func SelfCareForm(ctx context.Context, db *database.DB, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error) {
 
 	user, err := utils.ExtractUserFromContext(ctx, db)
 	if err != nil {
