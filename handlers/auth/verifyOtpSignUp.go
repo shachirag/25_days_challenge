@@ -54,7 +54,7 @@ func VerifyOtp(ctx context.Context, db *database.DB, data model.VerifyOtpRequest
 			Day:            1,
 			Date:           time.Now().UTC().Format(time.DateOnly),
 			CompletedTasks: []string{},
-			Status:         "ongoing",
+			Status:         "incomplete",
 		},
 	}
 
@@ -94,13 +94,14 @@ func findOrCreateUser(ctx context.Context, db *database.DB, userReq model.Verify
 				return nil, gqlerror.Errorf("Error hashing password.")
 			}
 
+			sessionID := primitive.NewObjectID().Hex()
 			userId := primitive.NewObjectID()
 			userData = entity.CustomerEntity{
 				Id:        userId,
 				UserName:  userReq.Username,
 				Email:     userReq.Email,
 				Password:  string(hashedPassword),
-				SessionId: userReq.SessionID,
+				SessionId: sessionID,
 				CreatedAt: time.Now().UTC(),
 				UpdatedAt: time.Now().UTC(),
 			}
@@ -124,7 +125,7 @@ func createTask(ctx context.Context, db *database.DB, userId primitive.ObjectID)
 		UserId:            userId,
 		Level:             1,
 		Day:               1,
-		Status:            "ongoing",
+		Status:            "incomplete",
 		ChalengeStartDate: time.Now().UTC(),
 		Date:              time.Now().UTC(),
 		CompletedTasks:    []string{},

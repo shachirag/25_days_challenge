@@ -31,7 +31,6 @@ input VerifyOtpRequestInput {
   username: String!
   email: String!
   password: String!
-  sessionId: String!
 }
 
 type Challenge {
@@ -54,7 +53,6 @@ type User {
 input LoginRequestInput {
   email: String!
   password: String!
-  sessionId: String!
 }
 
 input SignUpRequestInput {
@@ -81,7 +79,6 @@ input SocialLoginRequestInput {
   type: String!
   email: String
   name: String!
-  sessionId: String!
 }
 
 input ChangeStatusRequestInput {

@@ -538,7 +538,6 @@ input VerifyOtpRequestInput {
   username: String!
   email: String!
   password: String!
-  sessionId: String!
 }
 
 type Challenge {
@@ -561,7 +560,6 @@ type User {
 input LoginRequestInput {
   email: String!
   password: String!
-  sessionId: String!
 }
 
 input SignUpRequestInput {
@@ -588,7 +586,6 @@ input SocialLoginRequestInput {
   type: String!
   email: String
   name: String!
-  sessionId: String!
 }
 
 input ChangeStatusRequestInput {
@@ -4425,7 +4422,7 @@ func (ec *executionContext) unmarshalInputLoginRequestInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"email", "password", "sessionId"}
+	fieldsInOrder := [...]string{"email", "password"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4446,13 +4443,6 @@ func (ec *executionContext) unmarshalInputLoginRequestInput(ctx context.Context,
 				return it, err
 			}
 			it.Password = data
-		case "sessionId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sessionId"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.SessionID = data
 		}
 	}
 
@@ -4589,7 +4579,7 @@ func (ec *executionContext) unmarshalInputSocialLoginRequestInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"socialId", "type", "email", "name", "sessionId"}
+	fieldsInOrder := [...]string{"socialId", "type", "email", "name"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4624,13 +4614,6 @@ func (ec *executionContext) unmarshalInputSocialLoginRequestInput(ctx context.Co
 				return it, err
 			}
 			it.Name = data
-		case "sessionId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sessionId"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.SessionID = data
 		}
 	}
 
@@ -4678,7 +4661,7 @@ func (ec *executionContext) unmarshalInputVerifyOtpRequestInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"otp", "username", "email", "password", "sessionId"}
+	fieldsInOrder := [...]string{"otp", "username", "email", "password"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4713,13 +4696,6 @@ func (ec *executionContext) unmarshalInputVerifyOtpRequestInput(ctx context.Cont
 				return it, err
 			}
 			it.Password = data
-		case "sessionId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sessionId"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.SessionID = data
 		}
 	}
 

@@ -12,6 +12,7 @@ import (
 	jtoken "github.com/golang-jwt/jwt/v4"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -32,10 +33,11 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 		return nil, gqlerror.Errorf("Error occurred while fetching user: " + err.Error())
 	}
 
-	if customer.SessionId != "" && customer.SessionId != input.SessionID {
+	sessionID := primitive.NewObjectID().Hex()
+	if customer.SessionId != "" && customer.SessionId != sessionID {
 		update := bson.M{
 			"$set": bson.M{
-				"sessionId": input.SessionID,
+				"sessionId": sessionID,
 			},
 		}
 
@@ -71,20 +73,18 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 		return nil, gqlerror.Errorf("Error iterating through tasks: " + err.Error())
 	}
 
-	challenges := make([]*model.Challenge, len(tasks))
-	for i, task := range tasks {
-		completedTasks := []string{}
-		if len(task.CompletedTasks) > 0 {
-			completedTasks = task.CompletedTasks
-		}
-		challenges[i] = &model.Challenge{
-			ID:             task.Id.Hex(),
-			Level:          task.Level,
-			Day:            task.Day,
-			UserID:         task.UserId.Hex(),
-			Date:           task.Date.Format(time.DateOnly),
-			CompletedTasks: completedTasks,
-			Status:         task.Status,
+	var challenges []*model.Challenge
+	for _, task := range tasks {
+		if len(task.CompletedTasks) > 0 && task.CompletedTasks[0] != "" {
+			challenges = append(challenges, &model.Challenge{
+				ID:             task.Id.Hex(),
+				Level:          task.Level,
+				Day:            task.Day,
+				UserID:         task.UserId.Hex(),
+				Date:           task.Date.Format(time.DateOnly),
+				CompletedTasks: task.CompletedTasks,
+				Status:         task.Status,
+			})
 		}
 	}
 
@@ -97,7 +97,7 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 		"Id":        customer.Id.Hex(),
 		"email":     customer.Email,
 		"role":      "customer",
-		"sessionId": input.SessionID,
+		"sessionId": sessionID,
 		"exp":       time.Now().Add(6 * 30 * 24 * time.Hour).Unix(),
 	}
 
@@ -106,17 +106,6 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 	if err != nil {
 		return nil, gqlerror.Errorf("Failed to generate JWT token: " + err.Error())
 	}
-
-	// update := bson.M{
-	// 	"$set": bson.M{
-	// 		"sessionId": input.SessionID,
-	// 	},
-	// }
-
-	// _, err = customerColl.UpdateOne(ctx, bson.M{"_id": customer.Id}, update)
-	// if err != nil {
-	// 	return nil, gqlerror.Errorf("Failed to update active device ID: " + err.Error())
-	// }
 
 	return &model.LoginResponse{
 		User: &model.User{

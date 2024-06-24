@@ -72,7 +72,7 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 							Day:            1,
 							Date:           time.Now().Format(time.DateOnly),
 							CompletedTasks: []string{},
-							Status:         "ongoing",
+							Status:         "incomplete",
 						},
 					}
 
@@ -85,7 +85,7 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 						"Id":        customer.Id.Hex(),
 						"email":     customer.Email,
 						"role":      "customer",
-						"sessionId": input.SessionID,
+						"sessionId": customer.SessionId,
 						"exp":       time.Now().Add(6 * 30 * 24 * time.Hour).Unix(),
 					}
 
@@ -114,7 +114,8 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 		}
 	}
 
-	update := bson.M{"sessionId": input.SessionID}
+	sessionID := primitive.NewObjectID().Hex()
+	update := bson.M{"sessionId": sessionID}
 
 	if customer != nil {
 
@@ -160,35 +161,45 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 		return nil, gqlerror.Errorf("Error iterating through tasks: " + err.Error())
 	}
 
-	challenges := []*model.Challenge{}
+	var challenges []*model.Challenge
 	for _, task := range tasks {
-		completedTasks := []string{}
-		if len(task.CompletedTasks) > 0 {
-			completedTasks = task.CompletedTasks
+		if len(task.CompletedTasks) > 0 && task.CompletedTasks[0] != "" {
+			challenges = append(challenges, &model.Challenge{
+				ID:             task.Id.Hex(),
+				Level:          task.Level,
+				Day:            task.Day,
+				UserID:         task.UserId.Hex(),
+				Date:           task.Date.Format(time.DateOnly),
+				CompletedTasks: task.CompletedTasks,
+				Status:         task.Status,
+			})
 		}
-		challenge := &model.Challenge{
-			ID:             task.Id.Hex(),
-			Level:          task.Level,
-			Day:            task.Day,
-			UserID:         task.UserId.Hex(),
-			Date:           task.Date.Format(time.DateOnly),
-			CompletedTasks: completedTasks,
-			Status:         task.Status,
-		}
-		challenges = append(challenges, challenge)
 	}
 
-	token, err := GenerateJWTToken(*customer)
+	secret := os.Getenv("JWT_SECRET_KEY")
+	if secret == "" {
+		return nil, gqlerror.Errorf("JWT secret key not found.")
+	}
+
+	claims := jtoken.MapClaims{
+		"Id":        customer.Id.Hex(),
+		"email":     customer.Email,
+		"role":      "customer",
+		"sessionId": sessionID,
+		"exp":       time.Now().Add(6 * 30 * 24 * time.Hour).Unix(),
+	}
+
+	token := jtoken.NewWithClaims(jtoken.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return nil, gqlerror.Errorf("Failed to generate JWT token: " + err.Error())
 	}
-
 	return &model.LoginResponse{
 		User: &model.User{
 			ID:       customer.Id.Hex(),
 			UserName: customer.UserName,
 			Email:    customer.Email,
-			Token:    token,
+			Token:    signedToken,
 		},
 		ChallengeStartDate: tasks[0].ChalengeStartDate.Format(time.DateOnly),
 		Challenges:         challenges,
@@ -213,11 +224,13 @@ func socialSignup(ctx context.Context, db *database.DB, data *model.SocialLoginR
 	}
 
 	id := primitive.NewObjectID()
+
+	sessionID := primitive.NewObjectID().Hex()
 	customer := &entity.CustomerEntity{
 		Id:        id,
 		Email:     smallEmail,
 		UserName:  data.Name,
-		SessionId: data.SessionID,
+		SessionId: sessionID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 	}
@@ -250,7 +263,7 @@ func createInitialTask(ctx context.Context, db *database.DB, userId primitive.Ob
 		Day:               1,
 		Date:              time.Now().UTC(),
 		ChalengeStartDate: time.Now().UTC(),
-		Status:            "ongoing",
+		Status:            "incomplete",
 		CompletedTasks:    []string{},
 		CreatedAt:         time.Now().UTC(),
 		UpdatedAt:         time.Now().UTC(),

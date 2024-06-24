@@ -29,9 +29,8 @@ type GetSelfCareFormRequestInput struct {
 }
 
 type LoginRequestInput struct {
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	SessionID string `json:"sessionId"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type LoginResponse struct {
@@ -73,11 +72,10 @@ type SignUpRequestInput struct {
 }
 
 type SocialLoginRequestInput struct {
-	SocialID  string  `json:"socialId"`
-	Type      string  `json:"type"`
-	Email     *string `json:"email,omitempty"`
-	Name      string  `json:"name"`
-	SessionID string  `json:"sessionId"`
+	SocialID string  `json:"socialId"`
+	Type     string  `json:"type"`
+	Email    *string `json:"email,omitempty"`
+	Name     string  `json:"name"`
 }
 
 type User struct {
@@ -93,9 +91,8 @@ type VerifyOtpForResetPasswordRequestInput struct {
 }
 
 type VerifyOtpRequestInput struct {
-	Otp       string `json:"otp"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	SessionID string `json:"sessionId"`
+	Otp      string `json:"otp"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
