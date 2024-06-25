@@ -86,7 +86,6 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
         return nil, gqlerror.Errorf("Error occurred while fetching task: " + err.Error())
     }
 
-    // Update existing task with new completed task
     update := bson.M{
         "$addToSet": bson.M{
             "completedTasks": input.CompletedTask,
@@ -96,7 +95,6 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
         },
     }
 
-    // Determine if the task should be marked as completed
     if shouldMarkCompleted(input.Level, append(task.CompletedTasks, input.CompletedTask)) {
         update["$set"].(bson.M)["status"] = "completed"
     } else {
@@ -108,7 +106,6 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
         return nil, gqlerror.Errorf("Failed to update task data in MongoDB: " + err.Error())
     }
 
-    // Update task status in the task struct
     if update["$set"] != nil {
         task.Status = update["$set"].(bson.M)["status"].(string)
     }
