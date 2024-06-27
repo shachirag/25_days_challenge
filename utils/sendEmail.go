@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ses"
@@ -9,9 +10,10 @@ import (
 )
 
 var (
-	charSet = aws.String("UTF-8")
-	sender  = aws.String("selfchallenge@yopmail.com")
-	subject = aws.String("OTP for reset password")
+	senderEmail = os.Getenv("SENDER_EMAIL")
+	charSet     = aws.String("UTF-8")
+	sender      = aws.String(senderEmail)
+	subject     = aws.String("OTP for reset password")
 )
 
 func SendEmail(sesClient *ses.Client, to string, link string) (*ses.SendEmailOutput, error) {

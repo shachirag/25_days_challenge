@@ -36,6 +36,12 @@ func main() {
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"message": "success"}`))
+	})
+
 	http.Handle("/query", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		opName := r.Header.Get("X-GraphQL-Operation-Name")
 		if opName == "" {

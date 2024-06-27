@@ -13,123 +13,126 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
 func CompleteTask(ctx context.Context, db *database.DB, userID string, input model.ChangeStatusRequestInput) (*model.Challenge, error) {
 
-    userObjID, err := primitive.ObjectIDFromHex(userID)
-    if err != nil {
-        return nil, gqlerror.Errorf("Invalid user ID")
-    }
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, gqlerror.Errorf("Invalid user ID")
+	}
 
-    userFilter := bson.M{
-        "_id": userObjID,
-    }
-    var user entity.CustomerEntity
-    err = db.GetCollection("user").FindOne(ctx, userFilter).Decode(&user)
-    if err != nil {
-        return nil, gqlerror.Errorf("Failed to fetch user")
-    }
+	userFilter := bson.M{
+		"_id": userObjID,
+	}
+	var user entity.CustomerEntity
+	err = db.GetCollection("user").FindOne(ctx, userFilter).Decode(&user)
+	if err != nil {
+		return nil, gqlerror.Errorf("Failed to fetch user")
+	}
 
-    deviceID, err := utils.ExtractDeviceIDFromContext(ctx)
-    if err != nil {
-        return nil, gqlerror.Errorf("Failed to extract device ID from context")
-    }
+	deviceID, err := utils.ExtractDeviceIDFromContext(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("Failed to extract device ID from context")
+	}
 
-    if user.SessionId != deviceID {
-        return nil, gqlerror.Errorf("Action not allowed. You are logged in from another device.")
-    }
+	// fmt.Println(deviceID)
+	// fmt.Println(user.SessionId)
 
-    var task entity.TasksEntity
-    taskColl := db.GetCollection("task")
-    date, err := utils.ParseDate(input.Date)
-    if err != nil {
-        return nil, gqlerror.Errorf("Invalid date format")
-    }
+	if user.SessionId != deviceID {
+		return nil, gqlerror.Errorf("Action not allowed. You are logged in from another device.")
+	}
 
-    filter := bson.M{
-        "userId": userObjID,
-        "level":  input.Level,
-        "day":    input.Day,
-        "date":   date,
-    }
+	var task entity.TasksEntity
+	taskColl := db.GetCollection("task")
+	date, err := utils.ParseDate(input.Date)
+	if err != nil {
+		return nil, gqlerror.Errorf("Invalid date format")
+	}
 
-    err = taskColl.FindOne(ctx, filter).Decode(&task)
-    if err != nil {
-        if err == mongo.ErrNoDocuments {
+	filter := bson.M{
+		"userId": userObjID,
+		"level":  input.Level,
+		"day":    input.Day,
+		"date":   date,
+	}
 
+	err = taskColl.FindOne(ctx, filter).Decode(&task)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
 
-            newTask := entity.TasksEntity{
-                Id:             primitive.NewObjectID(),
-                UserId:         userObjID,
-                Level:          input.Level,
-                Day:            input.Day,
-                Date:           date,
-                Status:         "incomplete",
-                CompletedTasks: []string{input.CompletedTask},
-                UpdatedAt:      time.Now().UTC(),
-            }
+			newTask := entity.TasksEntity{
+				Id:             primitive.NewObjectID(),
+				UserId:         userObjID,
+				Level:          input.Level,
+				Day:            input.Day,
+				Date:           date,
+				Status:         "incomplete",
+				CompletedTasks: []string{input.CompletedTask},
+				UpdatedAt:      time.Now().UTC(),
+			}
 
-            _, err = taskColl.InsertOne(ctx, newTask)
-            if err != nil {
-                return nil, gqlerror.Errorf("Failed to create new task document: " + err.Error())
-            }
+			_, err = taskColl.InsertOne(ctx, newTask)
+			if err != nil {
+				return nil, gqlerror.Errorf("Failed to create new task document: " + err.Error())
+			}
 
-            return &model.Challenge{
-                ID:             newTask.Id.Hex(),
-                Level:          input.Level,
-                Day:            input.Day,
-                Date:           input.Date,
-                Status:         newTask.Status,
-                UserID:         userID,
-                CompletedTasks: newTask.CompletedTasks,
-            }, nil
-        }
-        return nil, gqlerror.Errorf("Error occurred while fetching task: " + err.Error())
-    }
+			return &model.Challenge{
+				ID:             newTask.Id.Hex(),
+				Level:          input.Level,
+				Day:            input.Day,
+				Date:           input.Date,
+				Status:         newTask.Status,
+				UserID:         userID,
+				CompletedTasks: newTask.CompletedTasks,
+			}, nil
+		}
+		return nil, gqlerror.Errorf("Error occurred while fetching task: " + err.Error())
+	}
 
-    update := bson.M{
-        "$addToSet": bson.M{
-            "completedTasks": input.CompletedTask,
-        },
-        "$set": bson.M{
-            "updatedAt": time.Now().UTC(),
-        },
-    }
+	update := bson.M{
+		"$addToSet": bson.M{
+			"completedTasks": input.CompletedTask,
+		},
+		"$set": bson.M{
+			"updatedAt": time.Now().UTC(),
+		},
+	}
 
-    if shouldMarkCompleted(input.Level, append(task.CompletedTasks, input.CompletedTask)) {
-        update["$set"].(bson.M)["status"] = "completed"
-    } else {
-        update["$set"].(bson.M)["status"] = "incomplete"
-    }
+	if shouldMarkCompleted(input.Level, append(task.CompletedTasks, input.CompletedTask)) {
+		update["$set"].(bson.M)["status"] = "completed"
+	} else {
+		update["$set"].(bson.M)["status"] = "incomplete"
+	}
 
-    _, err = taskColl.UpdateOne(ctx, filter, update)
-    if err != nil {
-        return nil, gqlerror.Errorf("Failed to update task data in MongoDB: " + err.Error())
-    }
+	_, err = taskColl.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return nil, gqlerror.Errorf("Failed to update task data in MongoDB: " + err.Error())
+	}
 
-    if update["$set"] != nil {
-        task.Status = update["$set"].(bson.M)["status"].(string)
-    }
+	if update["$set"] != nil {
+		task.Status = update["$set"].(bson.M)["status"].(string)
+	}
 
-    return &model.Challenge{
-        ID:             task.Id.Hex(),
-        Level:          input.Level,
-        Day:            input.Day,
-        Date:           input.Date,
-        Status:         task.Status,
-        UserID:         userID,
-        CompletedTasks: task.CompletedTasks,
-    }, nil
+	return &model.Challenge{
+		ID:             task.Id.Hex(),
+		Level:          input.Level,
+		Day:            input.Day,
+		Date:           input.Date,
+		Status:         task.Status,
+		UserID:         userID,
+		CompletedTasks: task.CompletedTasks,
+	}, nil
 }
 
 func shouldMarkCompleted(level int, completedTasks []string) bool {
-    switch level {
-    case 1:
-        return len(completedTasks) >= 4
-    case 2:
-        return len(completedTasks) >= 6
-    case 3:
-        return len(completedTasks) >= 8
-    default:
-        return false
-    }
+	switch level {
+	case 1:
+		return len(completedTasks) >= 4
+	case 2:
+		return len(completedTasks) >= 6
+	case 3:
+		return len(completedTasks) >= 8
+	default:
+		return false
+	}
 }
