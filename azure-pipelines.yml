@@ -46,7 +46,7 @@ steps:
 
   inputs:
     awsCredentials: 'Self_Care_Ecr_Access'
-    regionName: ap-south-1
+    regionName: us-east-1
     imageSource: 'imagename'
     sourceImageName: $(AWS_ECR_IMAGE_URI)
     sourceImageTag: $(Build.BuildId)
