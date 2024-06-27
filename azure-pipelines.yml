@@ -45,8 +45,8 @@ steps:
 - task: ECRPushImage@1
 
   inputs:
-    awsCredentials: 'Self care aws access'
-    regionName: ap-south-1
+    awsCredentials: 'Self_Care_Ecr_Access'
+    regionName: us-east-1
     imageSource: 'imagename'
     sourceImageName: $(AWS_ECR_IMAGE_URI)
     sourceImageTag: $(Build.BuildId)
