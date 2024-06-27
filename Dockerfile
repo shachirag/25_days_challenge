@@ -10,5 +10,5 @@ COPY --from=build /app/main /
 # COPY ./firebase-sa-creds.json .
 # COPY ./public /public
 
-EXPOSE 8080
+EXPOSE 8888
 CMD ["/main"]
