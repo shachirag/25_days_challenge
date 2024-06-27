@@ -9,16 +9,21 @@ import (
 
 func LoadENV() error {
 	goEnv := os.Getenv("GO_ENV")
-	if goEnv == "" || goEnv == "development" {
-		if _, err := os.Stat(".env"); err == nil {
-			// .env file exists, load it
-			if loadErr := godotenv.Load(); loadErr != nil {
-				return fmt.Errorf("Error loading .env file: %w", loadErr)
-			}
-		} else {
-			// .env file does not exist, log or handle it as needed
-			fmt.Println("No .env file found, skipping loading .env file")
+	if goEnv == "" || goEnv == "prod" {
+		// Attempt to load the .env file
+		fmt.Println("Attempting to load .env file...")
+		err := godotenv.Load()
+		if err != nil {
+			fmt.Println("Error loading .env file:", err)
+			return err
 		}
+		// Print environment variables loaded from .env file for confirmation
+		fmt.Println(".env file loaded successfully:")
+		for _, env := range os.Environ() {
+			fmt.Println(env)
+		}
+	} else {
+		fmt.Println("Skipping .env file loading in production mode")
 	}
 	return nil
 }
