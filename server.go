@@ -1,7 +1,7 @@
 package main
 
 import (
-	"challenge/config"
+	"challenge/app"
 	"challenge/database"
 	graph "challenge/graph/resolvers"
 	"challenge/middleware"
@@ -17,19 +17,14 @@ const defaultPort = "8080"
 
 func main() {
 
-	err := config.LoadENV()
+	err := app.SetupAndRunApp()
 	if err != nil {
-		log.Fatalf("Failed to setup AWS clients: %v", err)
+		panic(err)
 	}
-	
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
-	}
-
-	err = database.SetupAWSClient()
-	if err != nil {
-		log.Fatalf("Failed to setup AWS clients: %v", err)
 	}
 
 	db := database.Connect()
