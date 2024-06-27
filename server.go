@@ -3,6 +3,7 @@ package main
 import (
 	"challenge/database"
 	graph "challenge/graph/resolvers"
+	"challenge/config"
 	"challenge/middleware"
 	"log"
 	"net/http"
@@ -20,7 +21,12 @@ func main() {
 		port = defaultPort
 	}
 
-	err := database.SetupAWSClient()
+	err := config.LoadENV()
+	if err != nil {
+		log.Fatalf("Failed to setup AWS clients: %v", err)
+	}
+
+	err = database.SetupAWSClient()
 	if err != nil {
 		log.Fatalf("Failed to setup AWS clients: %v", err)
 	}
@@ -74,7 +80,6 @@ func main() {
 	log.Printf("connect to http://localhost:%s/ for GraphQL Playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
-
 
 // package main
 
