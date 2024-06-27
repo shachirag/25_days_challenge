@@ -17,6 +17,5 @@ func SetupAndRunApp() error {
 		return err
 	}
 
-
 	return nil
 }
