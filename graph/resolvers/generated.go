@@ -63,7 +63,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CompleteTask              func(childComplexity int, userID string, input model.ChangeStatusRequestInput) int
+		CompleteTask              func(childComplexity int, input model.ChangeStatusRequestInput) int
 		ForgotPassword            func(childComplexity int, input model.ForgotPasswordRequestInput) int
 		Login                     func(childComplexity int, input model.LoginRequestInput) int
 		ResetPassword             func(childComplexity int, input model.ResetPasswordRequestInput) int
@@ -103,7 +103,7 @@ type MutationResolver interface {
 	ForgotPassword(ctx context.Context, input model.ForgotPasswordRequestInput) (*model.User, error)
 	VerifyOtpForResetPassword(ctx context.Context, input model.VerifyOtpForResetPasswordRequestInput) (*model.User, error)
 	ResetPassword(ctx context.Context, input model.ResetPasswordRequestInput) (*model.User, error)
-	CompleteTask(ctx context.Context, userID string, input model.ChangeStatusRequestInput) (*model.Challenge, error)
+	CompleteTask(ctx context.Context, input model.ChangeStatusRequestInput) (*model.Challenge, error)
 	SelfCareForm(ctx context.Context, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error)
 	SelfCareFormData(ctx context.Context, userID string, input model.GetSelfCareFormRequestInput) (*model.SelfCareReponse, error)
 }
@@ -210,7 +210,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CompleteTask(childComplexity, args["userId"].(string), args["input"].(model.ChangeStatusRequestInput)), true
+		return e.complexity.Mutation.CompleteTask(childComplexity, args["input"].(model.ChangeStatusRequestInput)), true
 
 	case "Mutation.forgotPassword":
 		if e.complexity.Mutation.ForgotPassword == nil {
@@ -519,7 +519,7 @@ type Mutation {
     input: VerifyOtpForResetPasswordRequestInput!
   ): User!
   resetPassword(input: ResetPasswordRequestInput!): User!
-  completeTask(userId: ID!, input: ChangeStatusRequestInput!): Challenge!
+  completeTask(input: ChangeStatusRequestInput!): Challenge!
   selfCareForm(input: SelfCareFormRequestInput!): SelfCareReponse!
   selfCareFormData(
     userId: ID!
@@ -626,24 +626,15 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) field_Mutation_completeTask_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["userId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["userId"] = arg0
-	var arg1 model.ChangeStatusRequestInput
+	var arg0 model.ChangeStatusRequestInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg1, err = ec.unmarshalNChangeStatusRequestInput2challengeᚋgraphᚋmodelᚐChangeStatusRequestInput(ctx, tmp)
+		arg0, err = ec.unmarshalNChangeStatusRequestInput2challengeᚋgraphᚋmodelᚐChangeStatusRequestInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1773,7 +1764,7 @@ func (ec *executionContext) _Mutation_completeTask(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CompleteTask(rctx, fc.Args["userId"].(string), fc.Args["input"].(model.ChangeStatusRequestInput))
+		return ec.resolvers.Mutation().CompleteTask(rctx, fc.Args["input"].(model.ChangeStatusRequestInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

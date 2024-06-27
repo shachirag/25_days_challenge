@@ -75,8 +75,8 @@ func (r *mutationResolver) ResetPassword(ctx context.Context, input model.ResetP
 }
 
 // CompleteTask is the resolver for the completeTask field.
-func (r *mutationResolver) CompleteTask(ctx context.Context, userID string, input model.ChangeStatusRequestInput) (*model.Challenge, error) {
-	changeStatusPayload, err := auth.CompleteTask(ctx, r.DB, userID, input)
+func (r *mutationResolver) CompleteTask(ctx context.Context, input model.ChangeStatusRequestInput) (*model.Challenge, error) {
+	changeStatusPayload, err := auth.CompleteTask(ctx, r.DB, input)
 	if err != nil {
 		return nil, err
 	}

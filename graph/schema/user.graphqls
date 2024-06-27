@@ -12,7 +12,7 @@ type Mutation {
     input: VerifyOtpForResetPasswordRequestInput!
   ): User!
   resetPassword(input: ResetPasswordRequestInput!): User!
-  completeTask(userId: ID!, input: ChangeStatusRequestInput!): Challenge!
+  completeTask(input: ChangeStatusRequestInput!): Challenge!
   selfCareForm(input: SelfCareFormRequestInput!): SelfCareReponse!
   selfCareFormData(
     userId: ID!

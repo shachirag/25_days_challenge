@@ -14,20 +14,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func CompleteTask(ctx context.Context, db *database.DB, userID string, input model.ChangeStatusRequestInput) (*model.Challenge, error) {
+func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatusRequestInput) (*model.Challenge, error) {
 
-	userObjID, err := primitive.ObjectIDFromHex(userID)
+	user, err := utils.ExtractUserFromContext(ctx, db)
 	if err != nil {
-		return nil, gqlerror.Errorf("Invalid user ID")
-	}
-
-	userFilter := bson.M{
-		"_id": userObjID,
-	}
-	var user entity.CustomerEntity
-	err = db.GetCollection("user").FindOne(ctx, userFilter).Decode(&user)
-	if err != nil {
-		return nil, gqlerror.Errorf("Failed to fetch user")
+		return nil, err
 	}
 
 	deviceID, err := utils.ExtractDeviceIDFromContext(ctx)
@@ -50,7 +41,7 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
 	}
 
 	filter := bson.M{
-		"userId": userObjID,
+		"userId": user.Id,
 		"level":  input.Level,
 		"day":    input.Day,
 		"date":   date,
@@ -62,7 +53,7 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
 
 			newTask := entity.TasksEntity{
 				Id:             primitive.NewObjectID(),
-				UserId:         userObjID,
+				UserId:         user.Id,
 				Level:          input.Level,
 				Day:            input.Day,
 				Date:           date,
@@ -82,7 +73,7 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
 				Day:            input.Day,
 				Date:           input.Date,
 				Status:         newTask.Status,
-				UserID:         userID,
+				UserID:         user.Id.Hex(),
 				CompletedTasks: newTask.CompletedTasks,
 			}, nil
 		}
@@ -119,7 +110,7 @@ func CompleteTask(ctx context.Context, db *database.DB, userID string, input mod
 		Day:            input.Day,
 		Date:           input.Date,
 		Status:         task.Status,
-		UserID:         userID,
+		UserID:         user.Id.Hex(),
 		CompletedTasks: task.CompletedTasks,
 	}, nil
 }
