@@ -4,6 +4,7 @@ import (
 	"challenge/database"
 	"challenge/entity"
 	"challenge/graph/model"
+	"challenge/utils"
 	"context"
 	"strings"
 	"time"
@@ -32,10 +33,10 @@ func SignUpUser(ctx context.Context, db *database.DB, sesClient *ses.Client, use
 	}
 
 	id := primitive.NewObjectID()
-	// otp := utils.Generate6DigitOtp()
+	otp := utils.Generate6DigitOtp()
 	otpData := entity.OtpEntity{
 		Id:        id,
-		Otp:       "111111",
+		Otp:       otp,
 		Email:     userInfo.Email,
 		CreatedAt: time.Now().UTC(),
 	}
@@ -45,10 +46,10 @@ func SignUpUser(ctx context.Context, db *database.DB, sesClient *ses.Client, use
 		return nil, gqlerror.Errorf("Error storing OTP: " + err.Error())
 	}
 
-	// _, err = utils.SendEmail(sesClient, userInfo.Email, otp)
-	// if err != nil {
-	// 	return nil, gqlerror.Errorf("Error sending OTP to email: " + err.Error())
-	// }
+	_, err = utils.SendEmail(sesClient, userInfo.Email, otp)
+	if err != nil {
+		return nil, gqlerror.Errorf("Error sending OTP to email: " + err.Error())
+	}
 
 	return &model.User{}, nil
 }
