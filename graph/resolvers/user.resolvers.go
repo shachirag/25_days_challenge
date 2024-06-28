@@ -93,8 +93,8 @@ func (r *mutationResolver) SelfCareForm(ctx context.Context, input model.SelfCar
 }
 
 // SelfCareFormData is the resolver for the selfCareFormData field.
-func (r *mutationResolver) SelfCareFormData(ctx context.Context, userID string, input model.GetSelfCareFormRequestInput) (*model.SelfCareReponse, error) {
-	selfCareFormDataPayload, err := auth.GetSelfCareFormData(ctx, r.DB, userID, input)
+func (r *mutationResolver) SelfCareFormData(ctx context.Context, input model.GetSelfCareFormRequestInput) (*model.SelfCareReponse, error) {
+	selfCareFormDataPayload, err := auth.GetSelfCareFormData(ctx, r.DB, input)
 	if err != nil {
 		return nil, err
 	}

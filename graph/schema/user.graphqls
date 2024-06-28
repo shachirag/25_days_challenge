@@ -14,10 +14,7 @@ type Mutation {
   resetPassword(input: ResetPasswordRequestInput!): User!
   completeTask(input: ChangeStatusRequestInput!): Challenge!
   selfCareForm(input: SelfCareFormRequestInput!): SelfCareReponse!
-  selfCareFormData(
-    userId: ID!
-    input: GetSelfCareFormRequestInput!
-  ): SelfCareReponse!
+  selfCareFormData(input: GetSelfCareFormRequestInput!): SelfCareReponse!
 }
 
 type LoginResponse {

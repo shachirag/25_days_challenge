@@ -9,11 +9,10 @@ import (
 
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func GetSelfCareFormData(ctx context.Context, db *database.DB, userId string, input model.GetSelfCareFormRequestInput) (*model.SelfCareReponse, error) {
+func GetSelfCareFormData(ctx context.Context, db *database.DB, input model.GetSelfCareFormRequestInput) (*model.SelfCareReponse, error) {
 
 	user, err := utils.ExtractUserFromContext(ctx, db)
 	if err != nil {
@@ -33,13 +32,8 @@ func GetSelfCareFormData(ctx context.Context, db *database.DB, userId string, in
 
 	taskColl := db.GetCollection("task")
 
-	userObjID, err := primitive.ObjectIDFromHex(userId)
-	if err != nil {
-		return nil, gqlerror.Errorf("Invalid challenge ID")
-	}
-
 	filter := bson.M{
-		"userId": userObjID,
+		"userId": user.Id,
 		"day":    input.Day,
 		"level":  input.Level,
 	}

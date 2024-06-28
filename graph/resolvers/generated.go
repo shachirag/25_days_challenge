@@ -68,7 +68,7 @@ type ComplexityRoot struct {
 		Login                     func(childComplexity int, input model.LoginRequestInput) int
 		ResetPassword             func(childComplexity int, input model.ResetPasswordRequestInput) int
 		SelfCareForm              func(childComplexity int, input model.SelfCareFormRequestInput) int
-		SelfCareFormData          func(childComplexity int, userID string, input model.GetSelfCareFormRequestInput) int
+		SelfCareFormData          func(childComplexity int, input model.GetSelfCareFormRequestInput) int
 		Signup                    func(childComplexity int, input model.SignUpRequestInput) int
 		SocialLogin               func(childComplexity int, input model.SocialLoginRequestInput) int
 		VerifyOtp                 func(childComplexity int, input model.VerifyOtpRequestInput) int
@@ -105,7 +105,7 @@ type MutationResolver interface {
 	ResetPassword(ctx context.Context, input model.ResetPasswordRequestInput) (*model.User, error)
 	CompleteTask(ctx context.Context, input model.ChangeStatusRequestInput) (*model.Challenge, error)
 	SelfCareForm(ctx context.Context, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error)
-	SelfCareFormData(ctx context.Context, userID string, input model.GetSelfCareFormRequestInput) (*model.SelfCareReponse, error)
+	SelfCareFormData(ctx context.Context, input model.GetSelfCareFormRequestInput) (*model.SelfCareReponse, error)
 }
 type QueryResolver interface {
 	Hello(ctx context.Context) (string, error)
@@ -270,7 +270,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SelfCareFormData(childComplexity, args["userId"].(string), args["input"].(model.GetSelfCareFormRequestInput)), true
+		return e.complexity.Mutation.SelfCareFormData(childComplexity, args["input"].(model.GetSelfCareFormRequestInput)), true
 
 	case "Mutation.signup":
 		if e.complexity.Mutation.Signup == nil {
@@ -521,10 +521,7 @@ type Mutation {
   resetPassword(input: ResetPasswordRequestInput!): User!
   completeTask(input: ChangeStatusRequestInput!): Challenge!
   selfCareForm(input: SelfCareFormRequestInput!): SelfCareReponse!
-  selfCareFormData(
-    userId: ID!
-    input: GetSelfCareFormRequestInput!
-  ): SelfCareReponse!
+  selfCareFormData(input: GetSelfCareFormRequestInput!): SelfCareReponse!
 }
 
 type LoginResponse {
@@ -686,24 +683,15 @@ func (ec *executionContext) field_Mutation_resetPassword_args(ctx context.Contex
 func (ec *executionContext) field_Mutation_selfCareFormData_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["userId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["userId"] = arg0
-	var arg1 model.GetSelfCareFormRequestInput
+	var arg0 model.GetSelfCareFormRequestInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg1, err = ec.unmarshalNGetSelfCareFormRequestInput2challengeᚋgraphᚋmodelᚐGetSelfCareFormRequestInput(ctx, tmp)
+		arg0, err = ec.unmarshalNGetSelfCareFormRequestInput2challengeᚋgraphᚋmodelᚐGetSelfCareFormRequestInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1902,7 +1890,7 @@ func (ec *executionContext) _Mutation_selfCareFormData(ctx context.Context, fiel
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().SelfCareFormData(rctx, fc.Args["userId"].(string), fc.Args["input"].(model.GetSelfCareFormRequestInput))
+		return ec.resolvers.Mutation().SelfCareFormData(rctx, fc.Args["input"].(model.GetSelfCareFormRequestInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

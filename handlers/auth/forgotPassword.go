@@ -60,9 +60,3 @@ func ForgotPassword(ctx context.Context, db *database.DB, sesClient *ses.Client,
 		Email:    user.Email,
 	}, nil
 }
-
-type CustomError struct {
-	Message    string
-	StatusCode int
-	Internal   error
-}
