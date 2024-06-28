@@ -82,7 +82,7 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 					}
 
 					claims := jtoken.MapClaims{
-						"Id":        customer.Id.Hex(),
+						"Id":        customer.Id,
 						"email":     customer.Email,
 						"role":      "customer",
 						"sessionId": customer.SessionId,
@@ -182,7 +182,7 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 	}
 
 	claims := jtoken.MapClaims{
-		"Id":        customer.Id.Hex(),
+		"Id":        customer.Id,
 		"email":     customer.Email,
 		"role":      "customer",
 		"sessionId": sessionID,

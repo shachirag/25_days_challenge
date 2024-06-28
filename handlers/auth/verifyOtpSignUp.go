@@ -148,7 +148,7 @@ func GenerateJWTToken(user entity.CustomerEntity) (string, error) {
 	}
 
 	claims := jtoken.MapClaims{
-		"Id":        user.Id.Hex(),
+		"Id":        user.Id,
 		"email":     user.Email,
 		"role":      "customer",
 		"sessionId": user.SessionId,

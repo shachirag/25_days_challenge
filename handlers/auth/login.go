@@ -94,7 +94,7 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 	}
 
 	claims := jtoken.MapClaims{
-		"Id":        customer.Id.Hex(),
+		"Id":        customer.Id,
 		"email":     customer.Email,
 		"role":      "customer",
 		"sessionId": sessionID,
