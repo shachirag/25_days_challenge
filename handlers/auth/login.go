@@ -5,6 +5,7 @@ import (
 	"challenge/entity"
 	"challenge/graph/model"
 	"context"
+	"os"
 	"strings"
 	"time"
 
@@ -87,10 +88,10 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 		}
 	}
 
-	// secret := os.Getenv("JWT_SECRET_KEY")
-	// if secret == "" {
-	// 	return nil, gqlerror.Errorf("JWT secret key not found.")
-	// }
+	secret := os.Getenv("JWT_SECRET_KEY")
+	if secret == "" {
+		return nil, gqlerror.Errorf("JWT secret key not found.")
+	}
 
 	claims := jtoken.MapClaims{
 		"Id":        customer.Id,
@@ -101,7 +102,7 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 	}
 
 	token := jtoken.NewWithClaims(jtoken.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte("chalenge"))
+	signedToken, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return nil, gqlerror.Errorf("Failed to generate JWT token: " + err.Error())
 	}
