@@ -47,9 +47,9 @@ func GetSelfCareFormData(ctx context.Context, db *database.DB, input model.GetSe
 	}
 
 	var OwnStatement string
-	var thingsYouWillDoTodayToNutureYourself string
-	var thingsThatYouLoveAboutYourself string
-	var thingsTodayThatBringYouJoyAndFlow string
+	var thingsYouWillDoTodayToNutureYourself []string
+	var thingsThatYouLoveAboutYourself []string
+	var thingsTodayThatBringYouJoyAndFlow []string
 	if task.SelfCareForm != nil {
 		OwnStatement = task.SelfCareForm.OwnStatement
 		thingsYouWillDoTodayToNutureYourself = task.SelfCareForm.ThingsYouWillDoTodayToNutureYourself

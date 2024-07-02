@@ -60,11 +60,11 @@ type SelfCareFormRequestInput struct {
 }
 
 type SelfCareReponse struct {
-	ID                                   string `json:"id"`
-	OwnStatement                         string `json:"ownStatement"`
-	ThingsYouWillDoTodayToNutureYourself string `json:"thingsYouWillDoTodayToNutureYourself"`
-	ThingsThatYouLoveAboutYourself       string `json:"thingsThatYouLoveAboutYourself"`
-	ThingsTodayThatBringYouJoyAndFlow    string `json:"thingsTodayThatBringYouJoyAndFlow"`
+	ID                                   string   `json:"id"`
+	OwnStatement                         string   `json:"ownStatement"`
+	ThingsYouWillDoTodayToNutureYourself []string `json:"thingsYouWillDoTodayToNutureYourself"`
+	ThingsThatYouLoveAboutYourself       []string `json:"thingsThatYouLoveAboutYourself"`
+	ThingsTodayThatBringYouJoyAndFlow    []string `json:"thingsTodayThatBringYouJoyAndFlow"`
 }
 
 type SignUpRequestInput struct {

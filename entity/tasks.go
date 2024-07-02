@@ -21,8 +21,8 @@ type TasksEntity struct {
 }
 
 type SelfCareForm struct {
-	OwnStatement                         string `json:"ownStatement" bson:"ownStatement"`
-	ThingsYouWillDoTodayToNutureYourself string `json:"thingsYouWillDoTodayToNutureYourself" bson:"thingsYouWillDoTodayToNutureYourself"`
-	ThingsThatYouLoveAboutYourself       string `json:"thingsThatYouLoveAboutYourself" bson:"thingsThatYouLoveAboutYourself"`
-	ThingsTodayThatBringYouJoyAndFlow    string `json:"thingsTodayThatBringYouJoyAndFlow" bson:"thingsTodayThatBringYouJoyAndFlow"`
+	OwnStatement                         string   `json:"ownStatement" bson:"ownStatement"`
+	ThingsYouWillDoTodayToNutureYourself []string `json:"thingsYouWillDoTodayToNutureYourself" bson:"thingsYouWillDoTodayToNutureYourself"`
+	ThingsThatYouLoveAboutYourself       []string `json:"thingsThatYouLoveAboutYourself" bson:"thingsThatYouLoveAboutYourself"`
+	ThingsTodayThatBringYouJoyAndFlow    []string `json:"thingsTodayThatBringYouJoyAndFlow" bson:"thingsTodayThatBringYouJoyAndFlow"`
 }

@@ -101,7 +101,7 @@ input GetSelfCareFormRequestInput {
 type SelfCareReponse {
   id: ID!
   ownStatement: String!
-  thingsYouWillDoTodayToNutureYourself: String!
-  thingsThatYouLoveAboutYourself: String!
-  thingsTodayThatBringYouJoyAndFlow: String!
+  thingsYouWillDoTodayToNutureYourself: [String!]!
+  thingsThatYouLoveAboutYourself: [String!]!
+  thingsTodayThatBringYouJoyAndFlow: [String!]!
 }

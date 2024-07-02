@@ -608,9 +608,9 @@ input GetSelfCareFormRequestInput {
 type SelfCareReponse {
   id: ID!
   ownStatement: String!
-  thingsYouWillDoTodayToNutureYourself: String!
-  thingsThatYouLoveAboutYourself: String!
-  thingsTodayThatBringYouJoyAndFlow: String!
+  thingsYouWillDoTodayToNutureYourself: [String!]!
+  thingsThatYouLoveAboutYourself: [String!]!
+  thingsTodayThatBringYouJoyAndFlow: [String!]!
 }
 `, BuiltIn: false},
 }
@@ -2230,9 +2230,9 @@ func (ec *executionContext) _SelfCareReponse_thingsYouWillDoTodayToNutureYoursel
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SelfCareReponse_thingsYouWillDoTodayToNutureYourself(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2274,9 +2274,9 @@ func (ec *executionContext) _SelfCareReponse_thingsThatYouLoveAboutYourself(ctx 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SelfCareReponse_thingsThatYouLoveAboutYourself(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2318,9 +2318,9 @@ func (ec *executionContext) _SelfCareReponse_thingsTodayThatBringYouJoyAndFlow(c
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.([]string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SelfCareReponse_thingsTodayThatBringYouJoyAndFlow(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {

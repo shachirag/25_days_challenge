@@ -64,12 +64,13 @@ func main() {
 			"VerifyOtp":                 false,
 		}
 		if authRequiredOperations[opName] {
-			// Wrap the server with ValidateJWT middleware
 			middleware.ValidateJWT(srv).ServeHTTP(w, r)
 		} else {
 			srv.ServeHTTP(w, r)
 		}
 	}))
+
+	http.Handle("/schema", srv)
 
 	http.Handle("/", playground.Handler("GraphQL Playground", "/query"))
 

@@ -6,6 +6,7 @@ import (
 	"challenge/graph/model"
 	"challenge/utils"
 	"context"
+	"strings"
 
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.mongodb.org/mongo-driver/bson"
@@ -50,12 +51,16 @@ func SelfCareForm(ctx context.Context, db *database.DB, input model.SelfCareForm
 		return nil, gqlerror.Errorf("Internal server error while fetching the task: " + err.Error())
 	}
 
+	thingsToNurtureYourself := strings.Split(input.ThingsYouWillDoTodayToNutureYourself, ",")
+	thingsYouLoveAboutYourself := strings.Split(input.ThingsThatYouLoveAboutYourself, ",")
+	thingsThatBringJoyAndFlow := strings.Split(input.ThingsTodayThatBringYouJoyAndFlow, ",")
+
 	update := bson.M{
 		"$set": bson.M{
 			"selfCareForm.ownStatement":                         input.OwnStatement,
-			"selfCareForm.thingsThatYouLoveAboutYourself":       input.ThingsThatYouLoveAboutYourself,
-			"selfCareForm.thingsTodayThatBringYouJoyAndFlow":    input.ThingsTodayThatBringYouJoyAndFlow,
-			"selfCareForm.thingsYouWillDoTodayToNutureYourself": input.ThingsYouWillDoTodayToNutureYourself,
+			"selfCareForm.thingsThatYouLoveAboutYourself":       thingsYouLoveAboutYourself,
+			"selfCareForm.thingsTodayThatBringYouJoyAndFlow":    thingsThatBringJoyAndFlow,
+			"selfCareForm.thingsYouWillDoTodayToNutureYourself": thingsToNurtureYourself,
 		},
 	}
 
@@ -67,8 +72,8 @@ func SelfCareForm(ctx context.Context, db *database.DB, input model.SelfCareForm
 	return &model.SelfCareReponse{
 		ID:                                   task.Id.Hex(),
 		OwnStatement:                         input.OwnStatement,
-		ThingsYouWillDoTodayToNutureYourself: input.ThingsYouWillDoTodayToNutureYourself,
-		ThingsThatYouLoveAboutYourself:       input.ThingsThatYouLoveAboutYourself,
-		ThingsTodayThatBringYouJoyAndFlow:    input.ThingsTodayThatBringYouJoyAndFlow,
+		ThingsYouWillDoTodayToNutureYourself: thingsToNurtureYourself,
+		ThingsThatYouLoveAboutYourself:       thingsYouLoveAboutYourself,
+		ThingsTodayThatBringYouJoyAndFlow:    thingsThatBringJoyAndFlow,
 	}, nil
 }
