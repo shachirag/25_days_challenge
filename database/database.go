@@ -1,9 +1,8 @@
-	package database
+package database
 
 import (
 	"context"
 	"log"
-	"os"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -27,8 +26,9 @@ func init() {
 }
 
 func Connect() *DB {
-	connectionString := os.Getenv("MONGO_URI")
-	database := os.Getenv("DATABASE_NAME")
+	connectionString := "mongodb+srv://peachysarahjoy:1x8bVMaGaOV4eYOx@challengecluster.k2a1pte.mongodb.net/?retryWrites=true&w=majority&appName=challengeCluster"
+	// connectionString := os.Getenv("MONGO_URI")
+	database := "selfCareChallengeDev"
 
 	if connectionString == "" || database == "" {
 		log.Fatal("MONGO_URI and DATABASE_NAME must be set in .env file")
@@ -55,7 +55,8 @@ func Connect() *DB {
 }
 
 func (db *DB) GetCollection(name string) *mongo.Collection {
-	database := os.Getenv("DATABASE_NAME")
+	// database := os.Getenv("DATABASE_NAME")
+	database := "selfCareChallengeDev"
 	return db.client.Database(database).Collection(name)
 }
 

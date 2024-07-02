@@ -5,7 +5,6 @@ import (
 	"challenge/entity"
 	"challenge/graph/model"
 	"context"
-	"os"
 	"time"
 
 	jtoken "github.com/golang-jwt/jwt/v4"
@@ -142,10 +141,10 @@ func createTask(ctx context.Context, db *database.DB, userId primitive.ObjectID)
 }
 
 func GenerateJWTToken(user entity.CustomerEntity) (string, error) {
-	secret := os.Getenv("JWT_SECRET_KEY")
-	if secret == "" {
-		return "", gqlerror.Errorf("JWT secret key not found.")
-	}
+	// secret := os.Getenv("JWT_SECRET_KEY")
+	// if secret == "" {
+	// 	return "", gqlerror.Errorf("JWT secret key not found.")
+	// }
 
 	claims := jtoken.MapClaims{
 		"Id":        user.Id,
@@ -156,5 +155,5 @@ func GenerateJWTToken(user entity.CustomerEntity) (string, error) {
 	}
 
 	token := jtoken.NewWithClaims(jtoken.SigningMethodHS256, claims)
-	return token.SignedString([]byte(secret))
+	return token.SignedString([]byte("chalenge"))
 }

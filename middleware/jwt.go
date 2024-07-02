@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -32,7 +31,8 @@ func ValidateJWT(next http.Handler) http.Handler {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("unexpected signing method")
 			}
-			return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+			// return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+			return []byte("chalenge"), nil
 		})
 		if err != nil || !token.Valid {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
@@ -49,7 +49,6 @@ func ValidateJWT(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
-
 
 // package middleware
 
