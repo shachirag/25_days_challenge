@@ -79,6 +79,7 @@ input SocialLoginRequestInput {
 }
 
 input ChangeStatusRequestInput {
+  userId: ID!
   level: Int!
   day: Int!
   completedTask: String!
@@ -86,6 +87,7 @@ input ChangeStatusRequestInput {
 }
 
 input SelfCareFormRequestInput {
+  userId: ID!
   challengeId: ID!
   ownStatement: String!
   thingsYouWillDoTodayToNutureYourself: String!
@@ -94,6 +96,7 @@ input SelfCareFormRequestInput {
 }
 
 input GetSelfCareFormRequestInput {
+  userId: ID!
   day: Int!
   level: Int!
 }

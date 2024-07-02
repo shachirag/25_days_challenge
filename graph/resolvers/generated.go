@@ -586,6 +586,7 @@ input SocialLoginRequestInput {
 }
 
 input ChangeStatusRequestInput {
+  userId: ID!
   level: Int!
   day: Int!
   completedTask: String!
@@ -593,6 +594,7 @@ input ChangeStatusRequestInput {
 }
 
 input SelfCareFormRequestInput {
+  userId: ID!
   challengeId: ID!
   ownStatement: String!
   thingsYouWillDoTodayToNutureYourself: String!
@@ -601,6 +603,7 @@ input SelfCareFormRequestInput {
 }
 
 input GetSelfCareFormRequestInput {
+  userId: ID!
   day: Int!
   level: Int!
 }
@@ -4292,13 +4295,20 @@ func (ec *executionContext) unmarshalInputChangeStatusRequestInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"level", "day", "completedTask", "date"}
+	fieldsInOrder := [...]string{"userId", "level", "day", "completedTask", "date"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
 		case "level":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("level"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
@@ -4367,13 +4377,20 @@ func (ec *executionContext) unmarshalInputGetSelfCareFormRequestInput(ctx contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"day", "level"}
+	fieldsInOrder := [...]string{"userId", "day", "level"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
 		case "day":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("day"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
@@ -4476,13 +4493,20 @@ func (ec *executionContext) unmarshalInputSelfCareFormRequestInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"challengeId", "ownStatement", "thingsYouWillDoTodayToNutureYourself", "thingsThatYouLoveAboutYourself", "thingsTodayThatBringYouJoyAndFlow"}
+	fieldsInOrder := [...]string{"userId", "challengeId", "ownStatement", "thingsYouWillDoTodayToNutureYourself", "thingsThatYouLoveAboutYourself", "thingsTodayThatBringYouJoyAndFlow"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
 		case "challengeId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("challengeId"))
 			data, err := ec.unmarshalNID2string(ctx, v)

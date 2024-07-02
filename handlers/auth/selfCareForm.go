@@ -16,9 +16,18 @@ import (
 
 func SelfCareForm(ctx context.Context, db *database.DB, input model.SelfCareFormRequestInput) (*model.SelfCareReponse, error) {
 
-	user, err := utils.ExtractUserFromContext(ctx, db)
+	userObjIdID, err := primitive.ObjectIDFromHex(input.UserID)
 	if err != nil {
-		return nil, err
+		return nil, gqlerror.Errorf("invalid user Id")
+	}
+
+	var customer entity.CustomerEntity
+	userFilter := bson.M{
+		"_id": userObjIdID,
+	}
+	err = db.GetCollection("user").FindOne(ctx, userFilter).Decode(&customer)
+	if err != nil {
+		return nil, gqlerror.Errorf("Error occurred while fetching user: " + err.Error())
 	}
 
 	deviceID, err := utils.ExtractDeviceIDFromContext(ctx)
@@ -26,7 +35,7 @@ func SelfCareForm(ctx context.Context, db *database.DB, input model.SelfCareForm
 		return nil, err
 	}
 
-	if user.SessionId != deviceID {
+	if customer.SessionId != deviceID {
 		return nil, gqlerror.Errorf("Action not allowed. You are logged in from another device.")
 	}
 

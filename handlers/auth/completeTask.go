@@ -16,9 +16,18 @@ import (
 
 func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatusRequestInput) (*model.Challenge, error) {
 
-	user, err := utils.ExtractUserFromContext(ctx, db)
+	userObjIdID, err := primitive.ObjectIDFromHex(input.UserID)
 	if err != nil {
-		return nil, err
+		return nil, gqlerror.Errorf("invalid user Id")
+	}
+
+	var customer entity.CustomerEntity
+	userFilter := bson.M{
+		"_id": userObjIdID,
+	}
+	err = db.GetCollection("user").FindOne(ctx, userFilter).Decode(&customer)
+	if err != nil {
+		return nil, gqlerror.Errorf("Error occurred while fetching user: " + err.Error())
 	}
 
 	deviceID, err := utils.ExtractDeviceIDFromContext(ctx)
@@ -26,10 +35,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 		return nil, gqlerror.Errorf("Failed to extract device ID from context")
 	}
 
-	// fmt.Println(deviceID)
-	// fmt.Println(user.SessionId)
-
-	if user.SessionId != deviceID {
+	if customer.SessionId != deviceID {
 		return nil, gqlerror.Errorf("Action not allowed. You are logged in from another device.")
 	}
 
@@ -41,7 +47,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 	}
 
 	filter := bson.M{
-		"userId": user.Id,
+		"userId": userObjIdID,
 		"level":  input.Level,
 		"day":    input.Day,
 		"date":   date,
@@ -53,7 +59,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 
 			newTask := entity.TasksEntity{
 				Id:             primitive.NewObjectID(),
-				UserId:         user.Id,
+				UserId:         customer.Id,
 				Level:          input.Level,
 				Day:            input.Day,
 				Date:           date,
@@ -73,7 +79,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 				Day:            input.Day,
 				Date:           input.Date,
 				Status:         newTask.Status,
-				UserID:         user.Id.Hex(),
+				UserID:         userObjIdID.Hex(),
 				CompletedTasks: newTask.CompletedTasks,
 			}, nil
 		}
@@ -110,7 +116,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 		Day:            input.Day,
 		Date:           input.Date,
 		Status:         task.Status,
-		UserID:         user.Id.Hex(),
+		UserID:         userObjIdID.Hex(),
 		CompletedTasks: task.CompletedTasks,
 	}, nil
 }

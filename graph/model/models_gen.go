@@ -13,6 +13,7 @@ type Challenge struct {
 }
 
 type ChangeStatusRequestInput struct {
+	UserID        string `json:"userId"`
 	Level         int    `json:"level"`
 	Day           int    `json:"day"`
 	CompletedTask string `json:"completedTask"`
@@ -24,8 +25,9 @@ type ForgotPasswordRequestInput struct {
 }
 
 type GetSelfCareFormRequestInput struct {
-	Day   int `json:"day"`
-	Level int `json:"level"`
+	UserID string `json:"userId"`
+	Day    int    `json:"day"`
+	Level  int    `json:"level"`
 }
 
 type LoginRequestInput struct {
@@ -52,6 +54,7 @@ type ResetPasswordRequestInput struct {
 }
 
 type SelfCareFormRequestInput struct {
+	UserID                               string `json:"userId"`
 	ChallengeID                          string `json:"challengeId"`
 	OwnStatement                         string `json:"ownStatement"`
 	ThingsYouWillDoTodayToNutureYourself string `json:"thingsYouWillDoTodayToNutureYourself"`
