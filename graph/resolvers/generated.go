@@ -590,7 +590,6 @@ input ChangeStatusRequestInput {
   level: Int!
   day: Int!
   completedTask: String!
-  date: String!
 }
 
 input SelfCareFormRequestInput {
@@ -4295,7 +4294,7 @@ func (ec *executionContext) unmarshalInputChangeStatusRequestInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"userId", "level", "day", "completedTask", "date"}
+	fieldsInOrder := [...]string{"userId", "level", "day", "completedTask"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4330,13 +4329,6 @@ func (ec *executionContext) unmarshalInputChangeStatusRequestInput(ctx context.C
 				return it, err
 			}
 			it.CompletedTask = data
-		case "date":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("date"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Date = data
 		}
 	}
 

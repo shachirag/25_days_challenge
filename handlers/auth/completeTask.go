@@ -41,16 +41,11 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 
 	var task entity.TasksEntity
 	taskColl := db.GetCollection("task")
-	date, err := utils.ParseDate(input.Date)
-	if err != nil {
-		return nil, gqlerror.Errorf("Invalid date format")
-	}
 
 	filter := bson.M{
 		"userId": userObjIdID,
 		"level":  input.Level,
 		"day":    input.Day,
-		"date":   date,
 	}
 
 	err = taskColl.FindOne(ctx, filter).Decode(&task)
@@ -62,7 +57,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 				UserId:         customer.Id,
 				Level:          input.Level,
 				Day:            input.Day,
-				Date:           date,
+				Date:           time.Now().UTC(),
 				Status:         "incomplete",
 				CompletedTasks: []string{input.CompletedTask},
 				UpdatedAt:      time.Now().UTC(),
@@ -77,7 +72,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 				ID:             newTask.Id.Hex(),
 				Level:          input.Level,
 				Day:            input.Day,
-				Date:           input.Date,
+				Date:           time.Now().UTC().Format(time.DateOnly),
 				Status:         newTask.Status,
 				UserID:         userObjIdID.Hex(),
 				CompletedTasks: newTask.CompletedTasks,
@@ -86,6 +81,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 		return nil, gqlerror.Errorf("Error occurred while fetching task: " + err.Error())
 	}
 
+	updatedCompletedTasks := append(task.CompletedTasks, input.CompletedTask)
 	update := bson.M{
 		"$addToSet": bson.M{
 			"completedTasks": input.CompletedTask,
@@ -114,10 +110,10 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 		ID:             task.Id.Hex(),
 		Level:          input.Level,
 		Day:            input.Day,
-		Date:           input.Date,
+		Date:           task.Date.Format(time.DateOnly),
 		Status:         task.Status,
 		UserID:         userObjIdID.Hex(),
-		CompletedTasks: task.CompletedTasks,
+		CompletedTasks: updatedCompletedTasks,
 	}, nil
 }
 

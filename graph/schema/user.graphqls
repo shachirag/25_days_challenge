@@ -83,7 +83,6 @@ input ChangeStatusRequestInput {
   level: Int!
   day: Int!
   completedTask: String!
-  date: String!
 }
 
 input SelfCareFormRequestInput {

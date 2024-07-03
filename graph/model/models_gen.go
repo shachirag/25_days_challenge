@@ -17,7 +17,6 @@ type ChangeStatusRequestInput struct {
 	Level         int    `json:"level"`
 	Day           int    `json:"day"`
 	CompletedTask string `json:"completedTask"`
-	Date          string `json:"date"`
 }
 
 type ForgotPasswordRequestInput struct {
