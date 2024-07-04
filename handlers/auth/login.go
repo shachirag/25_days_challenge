@@ -54,7 +54,7 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 	}
 
 	var tasks []entity.TasksEntity
-	taskFilter := bson.M{"userId": customer.Id}
+	taskFilter := bson.M{"userId": customer.Id, "cycleCount": customer.CycleCount}
 	cursor, err := db.GetCollection("task").Find(ctx, taskFilter)
 	if err != nil {
 		return nil, gqlerror.Errorf("Error occurred while fetching tasks: " + err.Error())

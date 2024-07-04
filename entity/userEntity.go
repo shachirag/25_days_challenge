@@ -13,6 +13,7 @@ type CustomerEntity struct {
 	Password      string             `json:"password" bson:"password"`
 	SocialDetails SocialDetails      `json:"socialDetails" bson:"socialDetails"`
 	SessionId     string             `json:"sessionId" bson:"sessionId"`
+	CycleCount    int64              `json:"cycleCount" bson:"cycleCount"`
 	CreatedAt     time.Time          `json:"cresatedAt" bson:"createdAt"`
 	UpdatedAt     time.Time          `json:"updatedAt" bson:"updatedAt"`
 }

@@ -18,7 +18,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 
 	userObjIdID, err := primitive.ObjectIDFromHex(input.UserID)
 	if err != nil {
-		return nil, gqlerror.Errorf("invalid user Id")
+		return nil, gqlerror.Errorf("Invalid user ID")
 	}
 
 	var customer entity.CustomerEntity
@@ -41,33 +41,32 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 
 	var task entity.TasksEntity
 	taskColl := db.GetCollection("task")
-
 	filter := bson.M{
-		"userId": userObjIdID,
-		"level":  input.Level,
-		"day":    input.Day,
+		"userId":     userObjIdID,
+		"level":      input.Level,
+		"day":        input.Day,
+		"cycleCount": customer.CycleCount,
 	}
 
 	err = taskColl.FindOne(ctx, filter).Decode(&task)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-
 			newTask := entity.TasksEntity{
 				Id:             primitive.NewObjectID(),
 				UserId:         customer.Id,
 				Level:          input.Level,
 				Day:            input.Day,
+				CycleCount:     customer.CycleCount,
 				Date:           time.Now().UTC(),
 				Status:         "incomplete",
 				CompletedTasks: []string{input.CompletedTask},
 				UpdatedAt:      time.Now().UTC(),
+				CreatedAt:      time.Now().UTC(),
 			}
-
 			_, err = taskColl.InsertOne(ctx, newTask)
 			if err != nil {
 				return nil, gqlerror.Errorf("Failed to create new task document: " + err.Error())
 			}
-
 			return &model.Challenge{
 				ID:             newTask.Id.Hex(),
 				Level:          input.Level,
@@ -81,7 +80,13 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 		return nil, gqlerror.Errorf("Error occurred while fetching task: " + err.Error())
 	}
 
-	updatedCompletedTasks := append(task.CompletedTasks, input.CompletedTask)
+	var updatedCompletedTasks []string
+	if task.CompletedTasks != nil {
+		updatedCompletedTasks = append(task.CompletedTasks, input.CompletedTask)
+	} else {
+		updatedCompletedTasks = []string{input.CompletedTask}
+	}
+
 	update := bson.M{
 		"$addToSet": bson.M{
 			"completedTasks": input.CompletedTask,
@@ -91,7 +96,59 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 		},
 	}
 
-	if shouldMarkCompleted(input.Level, append(task.CompletedTasks, input.CompletedTask)) {
+	if shouldMarkCompleted(input.Level, updatedCompletedTasks) {
+		if input.Level == 3 && len(updatedCompletedTasks) == 8 {
+			newCycle := task.CycleCount + 1
+			customerUpdate := bson.M{"$set": bson.M{"cycleCount": newCycle}}
+			_, err = db.GetCollection("user").UpdateOne(ctx, userFilter, customerUpdate)
+			if err != nil {
+				return nil, gqlerror.Errorf("Failed to update customer cycle count: " + err.Error())
+			}
+
+			update["$addToSet"].(bson.M)["completedTasks"] = input.CompletedTask
+			update["$set"].(bson.M)["status"] = "completed"
+			_, err = taskColl.UpdateOne(ctx, filter, update)
+			if err != nil {
+				return nil, gqlerror.Errorf("Failed to update task data in MongoDB: " + err.Error())
+			}
+
+			task.Status = "completed"
+
+			newTask := entity.TasksEntity{
+				Id:                primitive.NewObjectID(),
+				UserId:            customer.Id,
+				Level:             1,
+				Day:               1,
+				Date:              time.Now().UTC(),
+				ChalengeStartDate: time.Now().UTC(),
+				CycleCount:        newCycle,
+				Status:            "incomplete",
+				CompletedTasks:    []string{},
+				UpdatedAt:         time.Now().UTC(),
+				CreatedAt:         time.Now().UTC(),
+			}
+
+			_, err = taskColl.InsertOne(ctx, newTask)
+			if err != nil {
+				return nil, gqlerror.Errorf("Failed to create new reset task document: " + err.Error())
+			}
+
+			completedTasks := []string{}
+			if len(newTask.CompletedTasks) > 0 {
+				completedTasks = newTask.CompletedTasks
+			}
+
+			return &model.Challenge{
+				ID:             newTask.Id.Hex(),
+				Level:          1,
+				Day:            1,
+				Date:           time.Now().UTC().Format(time.DateOnly),
+				Status:         newTask.Status,
+				UserID:         userObjIdID.Hex(),
+				CompletedTasks: completedTasks,
+			}, nil
+		}
+
 		update["$set"].(bson.M)["status"] = "completed"
 	} else {
 		update["$set"].(bson.M)["status"] = "incomplete"
@@ -102,9 +159,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 		return nil, gqlerror.Errorf("Failed to update task data in MongoDB: " + err.Error())
 	}
 
-	if update["$set"] != nil {
-		task.Status = update["$set"].(bson.M)["status"].(string)
-	}
+	task.Status = update["$set"].(bson.M)["status"].(string)
 
 	return &model.Challenge{
 		ID:             task.Id.Hex(),

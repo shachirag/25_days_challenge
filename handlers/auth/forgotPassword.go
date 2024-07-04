@@ -3,8 +3,8 @@ package auth
 import (
 	"challenge/database"
 	"challenge/entity"
-	"challenge/utils"
 	"challenge/graph/model"
+	"challenge/utils"
 	"context"
 	"strings"
 	"time"
@@ -39,7 +39,7 @@ func ForgotPassword(ctx context.Context, db *database.DB, sesClient *ses.Client,
 
 	otpData := entity.OtpEntity{
 		Id:        primitive.NewObjectID(),
-		Otp:     otp,
+		Otp:       otp,
 		Email:     smallEmail,
 		CreatedAt: time.Now().UTC(),
 	}

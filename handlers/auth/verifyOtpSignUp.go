@@ -6,6 +6,7 @@ import (
 	"challenge/graph/model"
 	"context"
 	"os"
+	"strings"
 	"time"
 
 	jtoken "github.com/golang-jwt/jwt/v4"
@@ -18,7 +19,8 @@ import (
 )
 
 func VerifyOtp(ctx context.Context, db *database.DB, data model.VerifyOtpRequestInput) (*model.LoginResponse, error) {
-	otpData, err := fetchLatestOtp(ctx, db, data.Email)
+	smallEmail := strings.ToLower(data.Email)
+	otpData, err := fetchLatestOtp(ctx, db, smallEmail)
 	if err != nil {
 		return nil, err
 	}
@@ -85,8 +87,9 @@ func fetchLatestOtp(ctx context.Context, db *database.DB, email string) (*entity
 
 func findOrCreateUser(ctx context.Context, db *database.DB, userReq model.VerifyOtpRequestInput) (*entity.CustomerEntity, error) {
 	customerColl := db.GetCollection("user")
+	smallEmail := strings.ToLower(userReq.Email)
 	var userData entity.CustomerEntity
-	err := customerColl.FindOne(ctx, bson.M{"email": userReq.Email}).Decode(&userData)
+	err := customerColl.FindOne(ctx, bson.M{"email": smallEmail}).Decode(&userData)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userReq.Password), bcrypt.DefaultCost)
@@ -125,6 +128,7 @@ func createTask(ctx context.Context, db *database.DB, userId primitive.ObjectID)
 		UserId:            userId,
 		Level:             1,
 		Day:               1,
+		CycleCount:        1,
 		Status:            "incomplete",
 		ChalengeStartDate: time.Now().UTC(),
 		Date:              time.Now().UTC(),

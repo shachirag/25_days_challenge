@@ -15,6 +15,7 @@ type TasksEntity struct {
 	CompletedTasks    []string           `json:"completedTasks" bson:"completedTasks"`
 	ChalengeStartDate time.Time          `json:"challengeStartDate" bson:"challengeStartDate"`
 	Date              time.Time          `json:"date" bson:"date"`
+	CycleCount        int64              `json:"cycleCount" bson:"cycleCount"`
 	SelfCareForm      *SelfCareForm      `json:"selfCareForm,omitempty" bson:"selfCareForm,omitempty"`
 	CreatedAt         time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedAt         time.Time          `json:"updatedAt" bson:"updatedAt"`
