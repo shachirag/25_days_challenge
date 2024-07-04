@@ -12,8 +12,7 @@ import (
 )
 
 var (
-	ctx         = context.Background()
-	mongoClient *mongo.Client
+	ctx = context.Background()
 )
 
 type DB struct {
@@ -57,6 +56,6 @@ func (db *DB) Context() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 30*time.Second)
 }
 
-func GetMongoClient() *mongo.Client {
-	return mongoClient
+func (db *DB) GetMongoClient() *mongo.Client {
+	return db.client
 }

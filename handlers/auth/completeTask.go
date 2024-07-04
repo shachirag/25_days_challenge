@@ -96,70 +96,84 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 		},
 	}
 
-	if shouldMarkCompleted(input.Level, updatedCompletedTasks) {
-		if input.Level == 3 && len(updatedCompletedTasks) == 8 {
-			newCycle := task.CycleCount + 1
-			customerUpdate := bson.M{"$set": bson.M{"cycleCount": newCycle}}
-			_, err = db.GetCollection("user").UpdateOne(ctx, userFilter, customerUpdate)
-			if err != nil {
-				return nil, gqlerror.Errorf("Failed to update customer cycle count: " + err.Error())
+	session, err := db.GetMongoClient().StartSession()
+	if err != nil {
+		return nil, gqlerror.Errorf("Failed to start session")
+	}
+	defer session.EndSession(ctx)
+
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		if shouldMarkCompleted(input.Level, updatedCompletedTasks) {
+			if input.Level == 3 && len(updatedCompletedTasks) == 8 {
+				newCycle := task.CycleCount + 1
+				customerUpdate := bson.M{"$set": bson.M{"cycleCount": newCycle}}
+				_, err = db.GetCollection("user").UpdateOne(ctx, userFilter, customerUpdate)
+				if err != nil {
+					return nil, gqlerror.Errorf("Failed to update customer cycle count: " + err.Error())
+				}
+
+				update["$addToSet"].(bson.M)["completedTasks"] = input.CompletedTask
+				update["$set"].(bson.M)["status"] = "completed"
+				_, err = taskColl.UpdateOne(ctx, filter, update)
+				if err != nil {
+					return nil, gqlerror.Errorf("Failed to update task data in MongoDB: " + err.Error())
+				}
+
+				task.Status = "completed"
+
+				newTask := entity.TasksEntity{
+					Id:                primitive.NewObjectID(),
+					UserId:            customer.Id,
+					Level:             1,
+					Day:               1,
+					Date:              time.Now().UTC(),
+					ChalengeStartDate: time.Now().UTC(),
+					CycleCount:        newCycle,
+					Status:            "incomplete",
+					CompletedTasks:    []string{},
+					UpdatedAt:         time.Now().UTC(),
+					CreatedAt:         time.Now().UTC(),
+				}
+
+				_, err = taskColl.InsertOne(ctx, newTask)
+				if err != nil {
+					return nil, gqlerror.Errorf("Failed to create new reset task document: " + err.Error())
+				}
+
+				completedTasks := []string{}
+				if len(newTask.CompletedTasks) > 0 {
+					completedTasks = newTask.CompletedTasks
+				}
+
+				return &model.Challenge{
+					ID:             newTask.Id.Hex(),
+					Level:          1,
+					Day:            1,
+					Date:           time.Now().UTC().Format(time.DateOnly),
+					Status:         newTask.Status,
+					UserID:         userObjIdID.Hex(),
+					CompletedTasks: completedTasks,
+				}, nil
 			}
 
-			update["$addToSet"].(bson.M)["completedTasks"] = input.CompletedTask
 			update["$set"].(bson.M)["status"] = "completed"
-			_, err = taskColl.UpdateOne(ctx, filter, update)
-			if err != nil {
-				return nil, gqlerror.Errorf("Failed to update task data in MongoDB: " + err.Error())
-			}
-
-			task.Status = "completed"
-
-			newTask := entity.TasksEntity{
-				Id:                primitive.NewObjectID(),
-				UserId:            customer.Id,
-				Level:             1,
-				Day:               1,
-				Date:              time.Now().UTC(),
-				ChalengeStartDate: time.Now().UTC(),
-				CycleCount:        newCycle,
-				Status:            "incomplete",
-				CompletedTasks:    []string{},
-				UpdatedAt:         time.Now().UTC(),
-				CreatedAt:         time.Now().UTC(),
-			}
-
-			_, err = taskColl.InsertOne(ctx, newTask)
-			if err != nil {
-				return nil, gqlerror.Errorf("Failed to create new reset task document: " + err.Error())
-			}
-
-			completedTasks := []string{}
-			if len(newTask.CompletedTasks) > 0 {
-				completedTasks = newTask.CompletedTasks
-			}
-
-			return &model.Challenge{
-				ID:             newTask.Id.Hex(),
-				Level:          1,
-				Day:            1,
-				Date:           time.Now().UTC().Format(time.DateOnly),
-				Status:         newTask.Status,
-				UserID:         userObjIdID.Hex(),
-				CompletedTasks: completedTasks,
-			}, nil
+		} else {
+			update["$set"].(bson.M)["status"] = "incomplete"
 		}
 
-		update["$set"].(bson.M)["status"] = "completed"
-	} else {
-		update["$set"].(bson.M)["status"] = "incomplete"
+		_, err = taskColl.UpdateOne(ctx, filter, update)
+		if err != nil {
+			return nil, gqlerror.Errorf("Failed to update task data in MongoDB: " + err.Error())
+		}
+
+		task.Status = update["$set"].(bson.M)["status"].(string)
+		return nil, nil
 	}
 
-	_, err = taskColl.UpdateOne(ctx, filter, update)
+	_, err = session.WithTransaction(ctx, callback)
 	if err != nil {
-		return nil, gqlerror.Errorf("Failed to update task data in MongoDB: " + err.Error())
+		return nil, gqlerror.Errorf("Transaction failed: %v", err)
 	}
-
-	task.Status = update["$set"].(bson.M)["status"].(string)
 
 	return &model.Challenge{
 		ID:             task.Id.Hex(),
