@@ -107,14 +107,14 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 			if input.Level == 3 && len(updatedCompletedTasks) == 8 {
 				newCycle := task.CycleCount + 1
 				customerUpdate := bson.M{"$set": bson.M{"cycleCount": newCycle}}
-				_, err = db.GetCollection("user").UpdateOne(ctx, userFilter, customerUpdate)
+				_, err = db.GetCollection("user").UpdateOne(sessCtx, userFilter, customerUpdate)
 				if err != nil {
 					return nil, gqlerror.Errorf("Failed to update customer cycle count: " + err.Error())
 				}
 
 				update["$addToSet"].(bson.M)["completedTasks"] = input.CompletedTask
 				update["$set"].(bson.M)["status"] = "completed"
-				_, err = taskColl.UpdateOne(ctx, filter, update)
+				_, err = taskColl.UpdateOne(sessCtx, filter, update)
 				if err != nil {
 					return nil, gqlerror.Errorf("Failed to update task data in MongoDB: " + err.Error())
 				}
@@ -135,7 +135,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 					CreatedAt:         time.Now().UTC(),
 				}
 
-				_, err = taskColl.InsertOne(ctx, newTask)
+				_, err = taskColl.InsertOne(sessCtx, newTask)
 				if err != nil {
 					return nil, gqlerror.Errorf("Failed to create new reset task document: " + err.Error())
 				}
