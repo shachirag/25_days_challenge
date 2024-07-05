@@ -100,13 +100,14 @@ func findOrCreateUser(ctx context.Context, db *database.DB, userReq model.Verify
 			sessionID := primitive.NewObjectID().Hex()
 			userId := primitive.NewObjectID()
 			userData = entity.CustomerEntity{
-				Id:        userId,
-				UserName:  userReq.Username,
-				Email:     userReq.Email,
-				Password:  string(hashedPassword),
-				SessionId: sessionID,
-				CreatedAt: time.Now().UTC(),
-				UpdatedAt: time.Now().UTC(),
+				Id:         userId,
+				UserName:   userReq.Username,
+				Email:      userReq.Email,
+				Password:   string(hashedPassword),
+				SessionId:  sessionID,
+				CycleCount: 1,
+				CreatedAt:  time.Now().UTC(),
+				UpdatedAt:  time.Now().UTC(),
 			}
 
 			_, err = customerColl.InsertOne(ctx, userData)
