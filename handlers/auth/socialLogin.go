@@ -227,12 +227,13 @@ func socialSignup(ctx context.Context, db *database.DB, data *model.SocialLoginR
 
 	sessionID := primitive.NewObjectID().Hex()
 	customer := &entity.CustomerEntity{
-		Id:        id,
-		Email:     smallEmail,
-		UserName:  data.Name,
-		SessionId: sessionID,
-		CreatedAt: time.Now().UTC(),
-		UpdatedAt: time.Now().UTC(),
+		Id:         id,
+		Email:      smallEmail,
+		UserName:   data.Name,
+		SessionId:  sessionID,
+		CycleCount: 1,
+		CreatedAt:  time.Now().UTC(),
+		UpdatedAt:  time.Now().UTC(),
 	}
 
 	switch data.Type {
@@ -261,6 +262,7 @@ func createInitialTask(ctx context.Context, db *database.DB, userId primitive.Ob
 		UserId:            userId,
 		Level:             1,
 		Day:               1,
+		CycleCount:        1,
 		Date:              time.Now().UTC(),
 		ChalengeStartDate: time.Now().UTC(),
 		Status:            "incomplete",
