@@ -16,6 +16,7 @@ type ChangeStatusRequestInput struct {
 	UserID        string `json:"userId"`
 	Level         int    `json:"level"`
 	Day           int    `json:"day"`
+	Date          string `json:"date"`
 	CompletedTask string `json:"completedTask"`
 }
 

@@ -589,6 +589,7 @@ input ChangeStatusRequestInput {
   userId: ID!
   level: Int!
   day: Int!
+  date: String!
   completedTask: String!
 }
 
@@ -4294,7 +4295,7 @@ func (ec *executionContext) unmarshalInputChangeStatusRequestInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"userId", "level", "day", "completedTask"}
+	fieldsInOrder := [...]string{"userId", "level", "day", "date", "completedTask"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4322,6 +4323,13 @@ func (ec *executionContext) unmarshalInputChangeStatusRequestInput(ctx context.C
 				return it, err
 			}
 			it.Day = data
+		case "date":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("date"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Date = data
 		case "completedTask":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedTask"))
 			data, err := ec.unmarshalNString2string(ctx, v)

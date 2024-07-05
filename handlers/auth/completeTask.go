@@ -179,7 +179,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 		ID:             task.Id.Hex(),
 		Level:          input.Level,
 		Day:            input.Day,
-		Date:           task.Date.Format(time.DateOnly),
+		Date:           input.Date,
 		Status:         task.Status,
 		UserID:         userObjIdID.Hex(),
 		CompletedTasks: updatedCompletedTasks,

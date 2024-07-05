@@ -82,6 +82,7 @@ input ChangeStatusRequestInput {
   userId: ID!
   level: Int!
   day: Int!
+  date: String!
   completedTask: String!
 }
 
