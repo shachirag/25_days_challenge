@@ -90,6 +90,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 	update := bson.M{
 		"$addToSet": bson.M{
 			"completedTasks": input.CompletedTask,
+			"date":           time.Now().UTC(),
 		},
 		"$set": bson.M{
 			"updatedAt": time.Now().UTC(),
