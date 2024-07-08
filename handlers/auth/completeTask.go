@@ -48,6 +48,11 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 		"cycleCount": customer.CycleCount,
 	}
 
+	date, err := utils.ParseDate(input.Date)
+	if err != nil {
+		return nil, gqlerror.Errorf("Failed to convert date")
+	}
+
 	err = taskColl.FindOne(ctx, filter).Decode(&task)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -57,7 +62,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 				Level:          input.Level,
 				Day:            input.Day,
 				CycleCount:     customer.CycleCount,
-				Date:           time.Now().UTC(),
+				Date:           date,
 				Status:         "incomplete",
 				CompletedTasks: []string{input.CompletedTask},
 				UpdatedAt:      time.Now().UTC(),
@@ -71,7 +76,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 				ID:             newTask.Id.Hex(),
 				Level:          input.Level,
 				Day:            input.Day,
-				Date:           time.Now().UTC().Format(time.DateOnly),
+				Date:           date.Format(time.DateOnly),
 				Status:         newTask.Status,
 				UserID:         userObjIdID.Hex(),
 				CompletedTasks: newTask.CompletedTasks,
@@ -90,10 +95,10 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 	update := bson.M{
 		"$addToSet": bson.M{
 			"completedTasks": input.CompletedTask,
-			"date":           time.Now().UTC(),
 		},
 		"$set": bson.M{
 			"updatedAt": time.Now().UTC(),
+			"date":      time.Now().UTC(),
 		},
 	}
 
@@ -150,7 +155,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 					ID:             newTask.Id.Hex(),
 					Level:          1,
 					Day:            1,
-					Date:           time.Now().UTC().Format(time.DateOnly),
+					Date:           date.Format(time.DateOnly),
 					Status:         newTask.Status,
 					UserID:         userObjIdID.Hex(),
 					CompletedTasks: completedTasks,
@@ -180,7 +185,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 		ID:             task.Id.Hex(),
 		Level:          input.Level,
 		Day:            input.Day,
-		Date:           input.Date,
+		Date:           date.Format(time.DateOnly),
 		Status:         task.Status,
 		UserID:         userObjIdID.Hex(),
 		CompletedTasks: updatedCompletedTasks,
