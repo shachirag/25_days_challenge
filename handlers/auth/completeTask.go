@@ -16,6 +16,11 @@ import (
 
 func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatusRequestInput) (*model.Challenge, error) {
 
+	deviceID, err := utils.ExtractDeviceIDFromContext(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("Failed to extract device ID from context")
+	}
+
 	userObjIdID, err := primitive.ObjectIDFromHex(input.UserID)
 	if err != nil {
 		return nil, gqlerror.Errorf("Invalid user ID")
@@ -28,11 +33,6 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 	err = db.GetCollection("user").FindOne(ctx, userFilter).Decode(&customer)
 	if err != nil {
 		return nil, gqlerror.Errorf("Error occurred while fetching user: " + err.Error())
-	}
-
-	deviceID, err := utils.ExtractDeviceIDFromContext(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("Failed to extract device ID from context")
 	}
 
 	if customer.SessionId != deviceID {

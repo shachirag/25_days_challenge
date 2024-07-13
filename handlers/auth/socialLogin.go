@@ -116,9 +116,7 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 
 	sessionID := primitive.NewObjectID().Hex()
 	update := bson.M{"sessionId": sessionID}
-
 	if customer != nil {
-
 		isUpdate := false
 		if customer.Email == "" && smallEmail != "" {
 			update["email"] = smallEmail
@@ -174,6 +172,11 @@ func SocialLoginCustomer(ctx context.Context, db *database.DB, input model.Socia
 				Status:         task.Status,
 			})
 		}
+	}
+
+	_, err = userColl.UpdateOne(ctx, bson.M{"_id": customer.Id}, bson.M{"$set": update})
+	if err != nil {
+		return nil, gqlerror.Errorf("Failed to update user details: " + err.Error())
 	}
 
 	secret := os.Getenv("JWT_SECRET_KEY")

@@ -19,6 +19,6 @@ type CustomerEntity struct {
 }
 
 type SocialDetails struct {
-	AppleId  string `json:"appleId"`
-	GoogleId string `json:"googleId"`
+	AppleId  string `json:"appleId" bson:"appleId"`
+	GoogleId string `json:"googleId" bson:"googleId"`
 }
