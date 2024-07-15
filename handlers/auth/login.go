@@ -45,7 +45,6 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 		if err != nil {
 			return nil, gqlerror.Errorf("Failed to update active device ID: " + err.Error())
 		}
-
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(customer.Password), []byte(strings.TrimSpace(input.Password)))

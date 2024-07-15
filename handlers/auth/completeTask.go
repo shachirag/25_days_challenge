@@ -132,7 +132,7 @@ func CompleteTask(ctx context.Context, db *database.DB, input model.ChangeStatus
 					UserId:            customer.Id,
 					Level:             1,
 					Day:               1,
-					Date:              time.Now().UTC(),
+					Date:              date,
 					ChalengeStartDate: time.Now().UTC(),
 					CycleCount:        newCycle,
 					Status:            "incomplete",
