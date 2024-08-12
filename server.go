@@ -13,7 +13,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 )
 
-const defaultPort = "8080"
+const port = "8080"
 
 func main() {
 	err := app.SetupAndRunApp()
@@ -63,6 +63,7 @@ func main() {
 			"SocialLoginCustomer":       false,
 			"VerifyOtpForResetPassword": false,
 			"VerifyOtp":                 false,
+			"DeleteAccount":             true,
 		}
 		if authRequiredOperations[opName] {
 			middleware.ValidateJWT(srv).ServeHTTP(w, r)

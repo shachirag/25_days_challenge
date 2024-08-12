@@ -6,12 +6,8 @@ type Query {
 type Mutation {
   login(input: LoginRequestInput!): LoginResponse!
   socialLogin(input: SocialLoginRequestInput!): LoginResponse!
-  signup(input: SignUpRequestInput!): User!
   verifyOtp(input: VerifyOtpRequestInput!): LoginResponse!
-  forgotPassword(input: ForgotPasswordRequestInput!): User!
-  verifyOtpForResetPassword(
-    input: VerifyOtpForResetPasswordRequestInput!
-  ): User!
+  forgotPassword(input: ForgotPasswordRequestInput!): ForgotPasswordResponse!
   resetPassword(input: ResetPasswordRequestInput!): User!
   completeTask(input: ChangeStatusRequestInput!): Challenge!
   selfCareForm(input: SelfCareFormRequestInput!): SelfCareReponse!
@@ -23,6 +19,10 @@ type Response {
   message: String!
 }
 
+type ForgotPasswordResponse {
+  isUserFound: Boolean!
+}
+
 type LoginResponse {
   user: User!
   challengeStartDate: String!
@@ -30,7 +30,6 @@ type LoginResponse {
 }
 
 input VerifyOtpRequestInput {
-  otp: String!
   username: String!
   email: String!
   password: String!

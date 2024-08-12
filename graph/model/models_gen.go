@@ -24,6 +24,10 @@ type ForgotPasswordRequestInput struct {
 	Email string `json:"email"`
 }
 
+type ForgotPasswordResponse struct {
+	IsUserFound bool `json:"isUserFound"`
+}
+
 type GetSelfCareFormRequestInput struct {
 	UserID string `json:"userId"`
 	Day    int    `json:"day"`
@@ -98,7 +102,6 @@ type VerifyOtpForResetPasswordRequestInput struct {
 }
 
 type VerifyOtpRequestInput struct {
-	Otp      string `json:"otp"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`

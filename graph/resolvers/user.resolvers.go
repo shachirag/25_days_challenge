@@ -9,8 +9,8 @@ import (
 	"challenge/handlers/auth"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 )
 
 // Login is the resolver for the login field.
@@ -31,15 +31,6 @@ func (r *mutationResolver) SocialLogin(ctx context.Context, input model.SocialLo
 	return socialLoginPayload, nil
 }
 
-// Signup is the resolver for the signup field.
-func (r *mutationResolver) Signup(ctx context.Context, input model.SignUpRequestInput) (*model.User, error) {
-	signupPayload, err := auth.SignUpUser(ctx, r.DB, r.SESClient, input)
-	if err != nil {
-		return nil, err
-	}
-	return signupPayload, nil
-}
-
 // VerifyOtp is the resolver for the verifyOtp field.
 func (r *mutationResolver) VerifyOtp(ctx context.Context, input model.VerifyOtpRequestInput) (*model.LoginResponse, error) {
 	signupPayload, err := auth.VerifyOtp(ctx, r.DB, input)
@@ -50,21 +41,12 @@ func (r *mutationResolver) VerifyOtp(ctx context.Context, input model.VerifyOtpR
 }
 
 // ForgotPassword is the resolver for the forgotPassword field.
-func (r *mutationResolver) ForgotPassword(ctx context.Context, input model.ForgotPasswordRequestInput) (*model.User, error) {
-	ForgotPasswordPayload, err := auth.ForgotPassword(ctx, r.DB, r.SESClient, input)
+func (r *mutationResolver) ForgotPassword(ctx context.Context, input model.ForgotPasswordRequestInput) (*model.ForgotPasswordResponse, error) {
+	ForgotPasswordPayload, err := auth.ForgotPassword(ctx, r.DB, input)
 	if err != nil {
 		return nil, err
 	}
 	return ForgotPasswordPayload, nil
-}
-
-// VerifyOtpForResetPassword is the resolver for the verifyOtpForResetPassword field.
-func (r *mutationResolver) VerifyOtpForResetPassword(ctx context.Context, input model.VerifyOtpForResetPasswordRequestInput) (*model.User, error) {
-	VerifyOtpPayload, err := auth.VerifyOtpForResetPassword(ctx, r.DB, input)
-	if err != nil {
-		return nil, err
-	}
-	return VerifyOtpPayload, nil
 }
 
 // ResetPassword is the resolver for the resetPassword field.
@@ -105,7 +87,11 @@ func (r *mutationResolver) SelfCareFormData(ctx context.Context, input model.Get
 
 // DeleteAccount is the resolver for the deleteAccount field.
 func (r *mutationResolver) DeleteAccount(ctx context.Context, id string) (*model.Response, error) {
-	panic(fmt.Errorf("not implemented: DeleteAccount - deleteAccount"))
+	payload, err := auth.DeleteAccount(ctx, r.DB, id)
+	if err != nil {
+		return nil, err
+	}
+	return payload, nil
 }
 
 // Hello is the resolver for the hello field.
@@ -115,7 +101,7 @@ func (r *queryResolver) Hello(ctx context.Context) (string, error) {
 
 // PrivacyPolicy is the resolver for the PrivacyPolicy field.
 func (r *queryResolver) PrivacyPolicy(ctx context.Context) (string, error) {
-	content, err := ioutil.ReadFile("./public/privacyPolicy.html")
+	content, err := os.ReadFile("./public/privacyPolicy.html")
 	if err != nil {
 		log.Println("Error reading privacy policy file:", err)
 		return "", err
@@ -131,3 +117,10 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.

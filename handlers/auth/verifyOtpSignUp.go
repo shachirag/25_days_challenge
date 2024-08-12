@@ -19,15 +19,6 @@ import (
 )
 
 func VerifyOtp(ctx context.Context, db *database.DB, data model.VerifyOtpRequestInput) (*model.LoginResponse, error) {
-	smallEmail := strings.ToLower(data.Email)
-	otpData, err := fetchLatestOtp(ctx, db, smallEmail)
-	if err != nil {
-		return nil, err
-	}
-
-	if data.Otp != otpData.Otp {
-		return nil, gqlerror.Errorf("Invalid OTP.")
-	}
 
 	userData, err := findOrCreateUser(ctx, db, data)
 	if err != nil {
