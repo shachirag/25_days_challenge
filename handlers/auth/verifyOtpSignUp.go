@@ -89,7 +89,7 @@ func findOrCreateUser(ctx context.Context, db *database.DB, userReq model.Verify
 	customerColl := db.GetCollection("user")
 	smallEmail := strings.ToLower(userReq.Email)
 	var userData entity.CustomerEntity
-	err := customerColl.FindOne(ctx, bson.M{"email": smallEmail}).Decode(&userData)
+	err := customerColl.FindOne(ctx, bson.M{"email": smallEmail, "isDeleted": false}).Decode(&userData)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userReq.Password), bcrypt.DefaultCost)
@@ -106,6 +106,7 @@ func findOrCreateUser(ctx context.Context, db *database.DB, userReq model.Verify
 				Password:   string(hashedPassword),
 				SessionId:  sessionID,
 				CycleCount: 1,
+				IsDeleted:  false,
 				CreatedAt:  time.Now().UTC(),
 				UpdatedAt:  time.Now().UTC(),
 			}

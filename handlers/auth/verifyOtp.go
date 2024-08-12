@@ -26,7 +26,7 @@ func VerifyOtpForResetPassword(ctx context.Context, db *database.DB, input model
 
 	smallEmail := strings.ToLower(input.Email)
 
-	err := db.GetCollection("user").FindOne(ctx, bson.M{"email": smallEmail}).Decode(&user)
+	err := db.GetCollection("user").FindOne(ctx, bson.M{"email": smallEmail, "isDeleted": false}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, gqlerror.Errorf("user not found")

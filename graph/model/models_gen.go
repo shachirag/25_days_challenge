@@ -53,6 +53,10 @@ type ResetPasswordRequestInput struct {
 	ConfirmPassword string `json:"confirmPassword"`
 }
 
+type Response struct {
+	Message string `json:"message"`
+}
+
 type SelfCareFormRequestInput struct {
 	UserID                               string `json:"userId"`
 	ChallengeID                          string `json:"challengeId"`

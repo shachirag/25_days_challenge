@@ -8,7 +8,7 @@ RUN CGO_ENABLED=0 go build -o main server.go
 FROM gcr.io/distroless/static-debian11
 COPY --from=build /app/main /
 # COPY ./firebase-sa-creds.json .
-# COPY ./public /public
+COPY ./public /public
 
 EXPOSE 8080
 CMD ["/main"]

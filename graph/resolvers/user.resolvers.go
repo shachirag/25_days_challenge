@@ -9,6 +9,8 @@ import (
 	"challenge/handlers/auth"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"log"
 )
 
 // Login is the resolver for the login field.
@@ -101,9 +103,24 @@ func (r *mutationResolver) SelfCareFormData(ctx context.Context, input model.Get
 	return selfCareFormDataPayload, nil
 }
 
+// DeleteAccount is the resolver for the deleteAccount field.
+func (r *mutationResolver) DeleteAccount(ctx context.Context, id string) (*model.Response, error) {
+	panic(fmt.Errorf("not implemented: DeleteAccount - deleteAccount"))
+}
+
 // Hello is the resolver for the hello field.
 func (r *queryResolver) Hello(ctx context.Context) (string, error) {
 	panic(fmt.Errorf("not implemented: Hello - hello"))
+}
+
+// PrivacyPolicy is the resolver for the PrivacyPolicy field.
+func (r *queryResolver) PrivacyPolicy(ctx context.Context) (string, error) {
+	content, err := ioutil.ReadFile("./public/privacyPolicy.html")
+	if err != nil {
+		log.Println("Error reading privacy policy file:", err)
+		return "", err
+	}
+	return string(content), nil
 }
 
 // Mutation returns MutationResolver implementation.

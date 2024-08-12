@@ -22,7 +22,7 @@ func LoginCustomer(ctx context.Context, db *database.DB, input model.LoginReques
 
 	smallEmail := strings.ToLower(input.Email)
 
-	filter := bson.M{"email": smallEmail}
+	filter := bson.M{"email": smallEmail, "isDeleted": false}
 
 	var customer entity.CustomerEntity
 	err := customerColl.FindOne(ctx, filter).Decode(&customer)

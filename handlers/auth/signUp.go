@@ -20,7 +20,8 @@ func SignUpUser(ctx context.Context, db *database.DB, sesClient *ses.Client, use
 	otpColl := db.GetCollection("otp")
 
 	filter := bson.M{
-		"email": strings.ToLower(userInfo.Email),
+		"email":     strings.ToLower(userInfo.Email),
+		"isDeleted": false,
 	}
 
 	exists, err := customerColl.CountDocuments(ctx, filter)

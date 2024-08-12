@@ -16,7 +16,6 @@ import (
 const defaultPort = "8080"
 
 func main() {
-
 	err := app.SetupAndRunApp()
 	if err != nil {
 		panic(err)
@@ -24,7 +23,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = defaultPort
+		port = "8080"
 	}
 
 	db := database.Connect()
@@ -43,6 +42,8 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"message": "success"}`))
 	})
+
+	http.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("./public"))))
 
 	http.Handle("/query", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		opName := r.Header.Get("X-GraphQL-Operation-Name")
@@ -71,7 +72,6 @@ func main() {
 	}))
 
 	http.Handle("/schema", srv)
-
 	http.Handle("/", playground.Handler("GraphQL Playground", "/query"))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL Playground", port)
