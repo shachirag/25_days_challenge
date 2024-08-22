@@ -1,5 +1,5 @@
 trigger:
-- resetTaskRork
+- removeSignupVerificATION
 
 pool:
   vmImage: ubuntu-latest

@@ -79,8 +79,23 @@ func fetchLatestOtp(ctx context.Context, db *database.DB, email string) (*entity
 func findOrCreateUser(ctx context.Context, db *database.DB, userReq model.VerifyOtpRequestInput) (*entity.CustomerEntity, error) {
 	customerColl := db.GetCollection("user")
 	smallEmail := strings.ToLower(userReq.Email)
+
+	filter := bson.M{
+		"email":     strings.ToLower(smallEmail),
+		"isDeleted": false,
+	}
+
+	exists, err := customerColl.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, gqlerror.Errorf("Database error: " + err.Error())
+	}
+
+	if exists > 0 {
+		return nil, gqlerror.Errorf("Email is already in use.")
+	}
+
 	var userData entity.CustomerEntity
-	err := customerColl.FindOne(ctx, bson.M{"email": smallEmail, "isDeleted": false}).Decode(&userData)
+	err = customerColl.FindOne(ctx, bson.M{"email": smallEmail, "isDeleted": false}).Decode(&userData)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userReq.Password), bcrypt.DefaultCost)
